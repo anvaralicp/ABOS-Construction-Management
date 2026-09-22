@@ -70,6 +70,12 @@ async function main() {
     { action: 'budgets:write', resource: 'budget' },
     { action: 'budgets:delete', resource: 'budget' },
     { action: 'budgets:summary', resource: 'budget' },
+    { action: 'materials:read', resource: 'material' },
+    { action: 'materials:write', resource: 'material' },
+    { action: 'materials:delete', resource: 'material' },
+    { action: 'material_rates:read', resource: 'material_rate' },
+    { action: 'material_rates:write', resource: 'material_rate' },
+    { action: 'material_rates:delete', resource: 'material_rate' },
   ];
 
   const orgAdminPermIds = [];

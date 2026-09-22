@@ -51,6 +51,11 @@ enum ExpenseStatus {
   PAID
 }
 
+enum MaterialStatus {
+  ACTIVE
+  INACTIVE
+}
+
 enum PaymentStatus {
   PENDING
   COMPLETED
@@ -536,16 +541,22 @@ model Material {
   id              String @id @default(uuid()) @db.Uuid
   organization_id String @db.Uuid
   name            String
+  code            String?
+  description     String?
   unit_of_measure String
+  status          MaterialStatus @default(ACTIVE)
   
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
+  created_by String?   @db.Uuid
+  updated_by String?   @db.Uuid
 
   organization Organization   @relation(fields: [organization_id], references: [id], onDelete: Restrict)
   rates        MaterialRate[]
 
   @@unique([id, organization_id])
+  @@unique([organization_id, code])
   @@index([organization_id])
   @@map("materials")
 }
@@ -554,16 +565,18 @@ model MaterialRate {
   id              String   @id @default(uuid()) @db.Uuid
   organization_id String   @db.Uuid
   material_id     String   @db.Uuid
-  vendor_id       String   @db.Uuid
+  vendor_id       String?  @db.Uuid
   rate            Int
   currency        String
   effective_date  DateTime
   
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
+  created_by String?  @db.Uuid
+  updated_by String?  @db.Uuid
 
   material Material @relation(fields: [material_id, organization_id], references: [id, organization_id], onDelete: Restrict)
-  vendor   Vendor   @relation(fields: [vendor_id, organization_id], references: [id, organization_id], onDelete: Restrict)
+  vendor   Vendor?  @relation(fields: [vendor_id, organization_id], references: [id, organization_id], onDelete: Restrict)
 
   @@index([organization_id, material_id])
   @@map("material_rates")
