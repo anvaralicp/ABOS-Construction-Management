@@ -85,6 +85,10 @@ async function main() {
     { action: 'attendance:read', resource: 'attendance' },
     { action: 'attendance:write', resource: 'attendance' },
     { action: 'attendance:delete', resource: 'attendance' },
+    { action: 'vendor_payments:read', resource: 'vendor_payment' },
+    { action: 'vendor_payments:write', resource: 'vendor_payment' },
+    { action: 'vendor_payments:delete', resource: 'vendor_payment' },
+    { action: 'vendor_payments:summary', resource: 'vendor_payment' },
   ];
 
   const orgAdminPermIds = [];

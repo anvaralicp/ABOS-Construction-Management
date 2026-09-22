@@ -80,6 +80,14 @@ enum PaymentStatus {
   CANCELED
 }
 
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CHEQUE
+  UPI
+  CARD
+}
+
 enum VendorStatus {
   ACTIVE
   INACTIVE
@@ -490,7 +498,7 @@ model VendorPayment {
   amount           Int
   currency         String
   payment_date     DateTime
-  payment_method   String?
+  payment_method   PaymentMethod?
   reference_number String?
   status           PaymentStatus @default(PENDING)
   remarks          String?
