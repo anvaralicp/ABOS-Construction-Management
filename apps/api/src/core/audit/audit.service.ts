@@ -19,9 +19,10 @@ export class AuditService {
    * Explicitly record an audit event for a given tenant context.
    * This does NOT auto-audit every request. It must be called explicitly by business logic.
    */
-  async logEvent(context: TenantContext, payload: AuditEventPayload): Promise<void> {
+  async logEvent(context: TenantContext, payload: AuditEventPayload, tx?: any): Promise<void> {
     try {
-      await this.prisma.auditEvent.create({
+      const client = tx || this.prisma;
+      await client.auditEvent.create({
         data: {
           action: payload.action,
           entity_type: payload.entityType,

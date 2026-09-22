@@ -745,7 +745,7 @@ model ProgressReport {
   attachments ProgressReportAttachment[]
 
   @@unique([id, organization_id])
-  @@index([organization_id, project_id, report_date])
+  @@unique([organization_id, project_id, report_date])
   @@map("progress_reports")
 }
 
@@ -860,6 +860,7 @@ model ProgressReportAttachment {
   progress_report ProgressReport @relation(fields: [progress_report_id, organization_id], references: [id, organization_id], onDelete: Restrict)
   document        Document       @relation(fields: [document_id, organization_id], references: [id, organization_id], onDelete: Restrict)
 
+  @@unique([organization_id, progress_report_id, document_id])
   @@index([organization_id, progress_report_id])
   @@map("progress_report_attachments")
 }
