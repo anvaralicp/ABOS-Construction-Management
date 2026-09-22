@@ -20,10 +20,18 @@ When running in development, OpenAPI documentation is automatically generated an
 \`http://localhost:3000/api/docs\`
 The contract is generated from decorators on the controllers/DTOs, establishing a single source of truth.
 
+## Identity & Authentication
+Authentication is implemented via a JWT Bearer strategy.
+* Passwords are securely hashed using Argon2id.
+* The `/api/v1/auth/login` endpoint returns a short-lived \`accessToken\` and a long-lived \`refreshToken\`.
+* Refresh tokens are stored securely as hashed values in the database (via \`refresh_token_hash\`) to permit instant revocation.
+* Passwords and tokens are never logged or stored in plaintext.
+
 ## Tenant Context & Authorization
 * **Strict Tenant Rule**: Every tenant-aware request must execute within an explicit \`TenantContext\`.
-* **Flow**: Authentication extracts the user identity -> Retrieves Organization Membership -> Populates \`TenantContext\` on the Request -> Controller executes the scoped operation.
+* **Flow**: Authentication verifies JWT -> The \`TenantGuard\` reads the \`x-organization-id\` header -> Looks up active \`OrganizationMembership\` in the database -> Populates \`TenantContext\` on the Request.
 * The \`@CurrentTenant()\` decorator injects this validated context into controllers. Never accept \`organization_id\` directly from a user request body.
+* The \`@RequirePermissions()\` decorator validates route access against the user's role-based permissions array in their TenantContext.
 
 ## Error Format
 All API errors follow a structured format processed by the \`GlobalExceptionFilter\`:

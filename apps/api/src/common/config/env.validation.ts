@@ -19,6 +19,21 @@ class EnvironmentVariables {
 
   @IsString()
   CORS_ORIGIN: string;
+
+  @IsString()
+  JWT_SECRET: string;
+
+  @IsString()
+  JWT_EXPIRES_IN: string;
+
+  @IsString()
+  JWT_REFRESH_EXPIRES_IN: string;
+
+  @IsNumber()
+  RATE_LIMIT_TTL: number;
+
+  @IsNumber()
+  RATE_LIMIT_MAX: number;
 }
 
 export function validate(config: Record<string, unknown>) {

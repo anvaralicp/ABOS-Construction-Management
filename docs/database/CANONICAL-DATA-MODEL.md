@@ -30,10 +30,22 @@
 * **Primary key:** `id` (UUID)
 * **Tenant ownership:** Platform-level (cross-tenant identity is possible).
 * **Important fields:** `email`, `password_hash`, `status`.
-* **Relationships:** Has many Organization Memberships.
+* **Relationships:** Has many Organization Memberships, Has many User Sessions.
 * **Creation/update timestamps:** Yes.
 * **Soft-delete:** Yes.
 * **Audit requirement:** Yes.
+
+### User Session
+* **Purpose:** Represents an active authentication session (supports multi-device Web/Android/iOS).
+* **Owning module:** Identity & Access
+* **Primary key:** `id` (UUID)
+* **Tenant ownership:** Platform-level (Sessions belong to Users, not specific organizations).
+* **Important fields:** `user_id`, `refresh_token_hash`, `device_info`, `ip_address`, `expires_at`, `revoked_at`, `version`.
+* **Relationships:** Belongs to User.
+* **Creation/update timestamps:** `created_at` and `updated_at`.
+* **Soft-delete:** No. Revocation is handled via `revoked_at` timestamp.
+* **Audit requirement:** Yes.
+* **Notes:** One user may have multiple active sessions. Each session can be independently revoked. Logout revokes the relevant session. Password change revokes all active sessions. Expired/revoked sessions cannot refresh. Raw tokens are never stored. Optimistic concurrency (`version`) guarantees single-use refresh-token rotation and provides atomic replay/race detection. If a rotation conflict is detected, the session is immediately revoked as a security measure.
 
 ### Organization Membership
 * **Purpose:** Links a User to an Organization.

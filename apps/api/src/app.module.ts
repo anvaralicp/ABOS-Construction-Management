@@ -1,7 +1,10 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { CoreModule } from './core/core.module';
 import { HealthModule } from './health/health.module';
+import { IdentityModule } from './modules/identity/identity.module';
+import { OrganizationsModule } from './modules/organizations/organizations.module';
 import { validate } from './common/config/env.validation';
 
 @Module({
@@ -11,8 +14,18 @@ import { validate } from './common/config/env.validation';
       envFilePath: ['.env'],
       validate,
     }),
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => [{
+        ttl: config.get('RATE_LIMIT_TTL') || 60000,
+        limit: config.get('RATE_LIMIT_MAX') || 10,
+      }],
+    }),
     CoreModule,
     HealthModule,
+    IdentityModule,
+    OrganizationsModule,
   ],
 })
 export class AppModule {}
