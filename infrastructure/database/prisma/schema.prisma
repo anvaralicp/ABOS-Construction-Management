@@ -138,6 +138,7 @@ model Organization {
   workforce_members WorkforceMember[]
   documents         Document[]
   sync_events       SyncQueueEvent[]
+  tax_id            String?
   tax_configs       GstTaxConfig[]
   reports           Report[]
 
@@ -334,6 +335,7 @@ model Project {
   updated_by String?   @db.Uuid
 
   organization Organization @relation(fields: [organization_id], references: [id], onDelete: Restrict)
+  expenses Expense[]
 
   members               ProjectMember[]
   expenses              Expense[]
@@ -380,6 +382,7 @@ model Category {
   updated_by String?   @db.Uuid
 
   organization Organization @relation(fields: [organization_id], references: [id], onDelete: Restrict)
+  expenses Expense[]
   parent       Category?    @relation("CategoryToCategory", fields: [parent_id], references: [id], onDelete: Restrict) // Left for RLS
   children     Category[]   @relation("CategoryToCategory")
 
@@ -397,6 +400,16 @@ model Expense {
   project_id      String        @db.Uuid
   category_id     String        @db.Uuid
   vendor_id       String?       @db.Uuid
+  tax_config_id   String?       @db.Uuid
+
+  cgst_amount      Int?
+  sgst_amount      Int?
+  igst_amount      Int?
+  cess_amount      Int?
+  cgst_rate        Decimal?
+  sgst_rate        Decimal?
+  igst_rate        Decimal?
+  cess_rate        Decimal?
   
   item             String
   quantity         Decimal
@@ -432,7 +445,8 @@ model Expense {
 
   project  Project  @relation(fields: [project_id, organization_id], references: [id, organization_id], onDelete: Restrict)
   category Category @relation(fields: [category_id, organization_id], references: [id, organization_id], onDelete: Restrict)
-  vendor   Vendor?  @relation(fields: [vendor_id], references: [id], onDelete: Restrict) // Left for RLS due to nullable field
+  vendor   Vendor?  @relation(fields: [vendor_id], references: [id], onDelete: Restrict)
+  tax_config GstTaxConfig? @relation(fields: [tax_config_id], references: [id], onDelete: Restrict) // Left for RLS due to nullable field
 
   attachments     ExpenseAttachment[]
   vendor_payments VendorPayment[]
@@ -459,6 +473,7 @@ model Vendor {
   updated_by String?   @db.Uuid
 
   organization Organization @relation(fields: [organization_id], references: [id], onDelete: Restrict)
+  expenses Expense[]
 
   contacts         VendorContact[]
   expenses         Expense[]
@@ -794,6 +809,15 @@ model Report {
 }
 
 model GstTaxConfig {
+  code            String?
+  description     String?
+  tax_type        String?
+  cgst_rate       Decimal?
+  sgst_rate       Decimal?
+  igst_rate       Decimal?
+  cess_rate       Decimal?
+  effective_from  DateTime?
+  effective_to    DateTime?
   id              String  @id @default(uuid()) @db.Uuid
   organization_id String  @db.Uuid
   name            String
@@ -805,6 +829,7 @@ model GstTaxConfig {
   deleted_at DateTime?
 
   organization Organization @relation(fields: [organization_id], references: [id], onDelete: Restrict)
+  expenses Expense[]
 
   @@index([organization_id])
   @@map("gst_tax_configs")

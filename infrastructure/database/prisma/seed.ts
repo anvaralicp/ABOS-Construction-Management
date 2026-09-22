@@ -112,6 +112,11 @@ async function main() {
     { action: 'reports:vendors', resource: 'report' },
     { action: 'reports:equipment', resource: 'report' },
     { action: 'reports:progress', resource: 'report' },
+    { action: 'tax:read', resource: 'tax' },
+    { action: 'tax:create', resource: 'tax' },
+    { action: 'tax:update', resource: 'tax' },
+    { action: 'tax:delete', resource: 'tax' },
+    { action: 'tax:report', resource: 'tax' },
   ];
 
   const orgAdminPermIds = [];
