@@ -221,7 +221,7 @@
 * **Owning module:** Vendors
 * **Primary key:** `id` (UUID)
 * **Tenant ownership:** `organization_id`.
-* **Important fields:** `name`, `tax_id`, `status`.
+* **Important fields:** `name`, `code`, `tax_id`, `status`, `address`, `notes`, `created_by`, `updated_by`.
 * **Relationships:** Belongs to Organization.
 * **Creation/update timestamps:** Yes.
 * **Soft-delete:** Yes.
@@ -232,7 +232,7 @@
 * **Owning module:** Vendors
 * **Primary key:** `id` (UUID)
 * **Tenant ownership:** `organization_id`.
-* **Important fields:** `vendor_id`, `name`, `email`, `phone`.
+* **Important fields:** `vendor_id`, `name`, `designation`, `email`, `phone`, `alternate_phone`, `is_primary`, `created_by`, `updated_by`.
 * **Relationships:** Belongs to Vendor.
 * **Creation/update timestamps:** Yes.
 * **Soft-delete:** Yes.

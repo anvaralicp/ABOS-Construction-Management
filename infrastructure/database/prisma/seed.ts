@@ -57,6 +57,12 @@ async function main() {
     { action: 'categories:read', resource: 'category' },
     { action: 'categories:write', resource: 'category' },
     { action: 'categories:delete', resource: 'category' },
+    { action: 'vendors:read', resource: 'vendor' },
+    { action: 'vendors:write', resource: 'vendor' },
+    { action: 'vendors:delete', resource: 'vendor' },
+    { action: 'vendor_contacts:read', resource: 'vendor_contact' },
+    { action: 'vendor_contacts:write', resource: 'vendor_contact' },
+    { action: 'vendor_contacts:delete', resource: 'vendor_contact' },
   ];
 
   const orgAdminPermIds = [];

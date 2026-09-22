@@ -403,12 +403,17 @@ model Vendor {
   id              String       @id @default(uuid()) @db.Uuid
   organization_id String       @db.Uuid
   name            String
+  code            String?
   tax_id          String?
   status          VendorStatus @default(ACTIVE)
+  address         String?
+  notes           String?
   
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
+  created_by String?   @db.Uuid
+  updated_by String?   @db.Uuid
 
   organization Organization @relation(fields: [organization_id], references: [id], onDelete: Restrict)
 
@@ -418,6 +423,7 @@ model Vendor {
   vendor_payments  VendorPayment[]
   vendor_documents VendorDocument[]
 
+  @@unique([organization_id, code])
   @@unique([organization_id, tax_id])
   @@unique([id, organization_id])
   @@map("vendors")
@@ -428,12 +434,17 @@ model VendorContact {
   organization_id String  @db.Uuid
   vendor_id       String  @db.Uuid
   name            String
+  designation     String?
   email           String?
   phone           String?
+  alternate_phone String?
+  is_primary      Boolean @default(false)
   
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
+  created_by String?   @db.Uuid
+  updated_by String?   @db.Uuid
 
   vendor Vendor @relation(fields: [vendor_id, organization_id], references: [id, organization_id], onDelete: Restrict)
 
