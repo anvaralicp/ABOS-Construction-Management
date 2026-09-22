@@ -89,6 +89,11 @@ async function main() {
     { action: 'vendor_payments:write', resource: 'vendor_payment' },
     { action: 'vendor_payments:delete', resource: 'vendor_payment' },
     { action: 'vendor_payments:summary', resource: 'vendor_payment' },
+    { action: 'equipment:read', resource: 'equipment' },
+    { action: 'equipment:create', resource: 'equipment' },
+    { action: 'equipment:update', resource: 'equipment' },
+    { action: 'equipment:delete', resource: 'equipment' },
+    { action: 'equipment:assign', resource: 'equipment' },
   ];
 
   const orgAdminPermIds = [];

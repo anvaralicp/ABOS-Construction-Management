@@ -309,10 +309,21 @@
 * **Owning module:** Equipment
 * **Primary key:** `id` (UUID)
 * **Tenant ownership:** `organization_id`.
-* **Important fields:** `name`, `identifier`, `status`.
+* **Important fields:** `code`, `name`, `description`, `equipment_type`, `manufacturer`, `model`, `serial_number`, `registration_number`, `status`, `notes`.
 * **Relationships:** Belongs to Organization.
 * **Creation/update timestamps:** Yes.
 * **Soft-delete:** Yes.
+* **Audit requirement:** Yes.
+
+### Project Equipment Assignment
+* **Purpose:** Assigns equipment to a specific project.
+* **Owning module:** Equipment
+* **Primary key:** `id` (UUID)
+* **Tenant ownership:** `organization_id`, `project_id`.
+* **Important fields:** `equipment_id`, `assigned_from`, `assigned_to`, `status`, `notes`.
+* **Relationships:** Belongs to Project, Belongs to Equipment.
+* **Creation/update timestamps:** Yes.
+* **Soft-delete:** No.
 * **Audit requirement:** Yes.
 
 ### Progress Report

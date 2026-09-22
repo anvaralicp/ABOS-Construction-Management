@@ -15,6 +15,7 @@ import { BudgetsModule } from './modules/budgets/budgets.module';
 import { MaterialsModule } from './modules/materials/materials.module';
 import { WorkforceModule } from './modules/workforce/workforce.module';
 import { VendorPaymentsModule } from './modules/vendor-payments/vendor-payments.module';
+import { EquipmentModule } from './modules/equipment/equipment.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { VendorPaymentsModule } from './modules/vendor-payments/vendor-payments.
     MaterialsModule,
     WorkforceModule,
     VendorPaymentsModule,
+    EquipmentModule,
   ],
 })
 export class AppModule {}
