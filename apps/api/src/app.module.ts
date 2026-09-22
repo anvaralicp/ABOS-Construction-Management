@@ -20,6 +20,7 @@ import { ProgressReportsModule } from './modules/progress-reports/progress-repor
 import { DocumentsModule } from './modules/documents/documents.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { TaxModule } from './modules/tax/tax.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { TaxModule } from './modules/tax/tax.module';
     DocumentsModule,
     ReportsModule,
     TaxModule,
+    NotificationsModule,
   ],
 })
 export class AppModule {}

@@ -138,6 +138,7 @@ model Organization {
   workforce_members WorkforceMember[]
   documents         Document[]
   sync_events       SyncQueueEvent[]
+  notifications     Notification[]
   tax_id            String?
   tax_configs       GstTaxConfig[]
   reports           Report[]
@@ -291,22 +292,57 @@ model AuditEvent {
   @@map("audit_events")
 }
 
+
+enum NotificationType {
+  SYSTEM
+  BUDGET_ALERT
+  EXPENSE
+  PROJECT
+  PAYMENT
+  DOCUMENT
+  PROGRESS
+  WORKFORCE
+  EQUIPMENT
+  TAX
+  SECURITY
+}
+
+enum NotificationSeverity {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+  CRITICAL
+}
+
 model Notification {
   id              String    @id @default(uuid()) @db.Uuid
   organization_id String    @db.Uuid
   user_id         String    @db.Uuid
+  project_id      String?   @db.Uuid
   title           String
   body            String
-  type            String
+  type            NotificationType
+  severity        NotificationSeverity @default(INFO)
+  
+  is_read         Boolean   @default(false)
   read_at         DateTime?
+  expires_at      DateTime?
+  metadata        Json?
+  
+  deduplication_key String?
   
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
 
-  user User @relation(fields: [user_id], references: [id], onDelete: Restrict)
+  user         User         @relation(fields: [user_id], references: [id], onDelete: Restrict)
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Restrict)
+  project      Project?     @relation(fields: [project_id], references: [id], onDelete: Restrict)
 
-  @@index([organization_id, user_id])
+  @@index([organization_id, user_id, created_at])
+  @@index([organization_id, user_id, is_read, created_at])
+  
   @@map("notifications")
 }
 
@@ -338,6 +374,7 @@ model Project {
   expenses Expense[]
 
   members               ProjectMember[]
+  notifications         Notification[]
   expenses              Expense[]
   budgets               Budget[]
   progress_reports      ProgressReport[]

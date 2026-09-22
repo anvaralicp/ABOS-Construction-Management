@@ -117,6 +117,10 @@ async function main() {
     { action: 'tax:update', resource: 'tax' },
     { action: 'tax:delete', resource: 'tax' },
     { action: 'tax:report', resource: 'tax' },
+    { action: 'notifications:create', resource: 'notification' },
+    { action: 'notifications:read', resource: 'notification' },
+    { action: 'notifications:update', resource: 'notification' },
+    { action: 'notifications:delete', resource: 'notification' },
   ];
 
   const orgAdminPermIds = [];
