@@ -56,6 +56,23 @@ enum MaterialStatus {
   INACTIVE
 }
 
+enum WorkforceStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum AssignmentStatus {
+  ACTIVE
+  INACTIVE
+  COMPLETED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  HALF_DAY
+}
+
 enum PaymentStatus {
   PENDING
   COMPLETED
@@ -589,10 +606,13 @@ model WorkforceMember {
   trade           String?
   hourly_rate     Int?
   currency        String?
+  status          WorkforceStatus @default(ACTIVE)
   
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
+  created_by String?   @db.Uuid
+  updated_by String?   @db.Uuid
 
   organization Organization @relation(fields: [organization_id], references: [id], onDelete: Restrict)
   
@@ -614,10 +634,12 @@ model ProjectWorkforceAssignment {
   currency            String?
   start_date          DateTime?
   end_date            DateTime?
-  status              String    @default("ACTIVE")
+  status              AssignmentStatus @default(ACTIVE)
   
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
+  created_by String?  @db.Uuid
+  updated_by String?  @db.Uuid
 
   project          Project         @relation(fields: [project_id, organization_id], references: [id, organization_id], onDelete: Restrict)
   workforce_member WorkforceMember @relation(fields: [workforce_member_id, organization_id], references: [id, organization_id], onDelete: Restrict)
@@ -682,13 +704,23 @@ model DailyAttendance {
   workforce_member_id String   @db.Uuid
   date                DateTime
   hours               Decimal
+  status              AttendanceStatus @default(PRESENT)
+  remarks             String?
+  
+  version           Int       @default(1)
+  client_created_at DateTime?
+  client_updated_at DateTime?
   
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
+  created_by String?  @db.Uuid
+  updated_by String?  @db.Uuid
 
   project          Project         @relation(fields: [project_id, organization_id], references: [id, organization_id], onDelete: Restrict)
   workforce_member WorkforceMember @relation(fields: [workforce_member_id, organization_id], references: [id, organization_id], onDelete: Restrict)
 
+  @@unique([id, organization_id, project_id])
+  @@unique([organization_id, project_id, workforce_member_id, date])
   @@index([organization_id, project_id, date])
   @@map("daily_attendances")
 }

@@ -76,6 +76,15 @@ async function main() {
     { action: 'material_rates:read', resource: 'material_rate' },
     { action: 'material_rates:write', resource: 'material_rate' },
     { action: 'material_rates:delete', resource: 'material_rate' },
+    { action: 'workforce:read', resource: 'workforce' },
+    { action: 'workforce:write', resource: 'workforce' },
+    { action: 'workforce:delete', resource: 'workforce' },
+    { action: 'workforce_assignments:read', resource: 'assignment' },
+    { action: 'workforce_assignments:write', resource: 'assignment' },
+    { action: 'workforce_assignments:delete', resource: 'assignment' },
+    { action: 'attendance:read', resource: 'attendance' },
+    { action: 'attendance:write', resource: 'attendance' },
+    { action: 'attendance:delete', resource: 'attendance' },
   ];
 
   const orgAdminPermIds = [];
