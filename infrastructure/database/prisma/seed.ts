@@ -63,6 +63,9 @@ async function main() {
     { action: 'vendor_contacts:read', resource: 'vendor_contact' },
     { action: 'vendor_contacts:write', resource: 'vendor_contact' },
     { action: 'vendor_contacts:delete', resource: 'vendor_contact' },
+    { action: 'expenses:read', resource: 'expense' },
+    { action: 'expenses:write', resource: 'expense' },
+    { action: 'expenses:delete', resource: 'expense' },
   ];
 
   const orgAdminPermIds = [];
