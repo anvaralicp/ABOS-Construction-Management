@@ -98,6 +98,11 @@ async function main() {
     { action: 'progress_reports:create', resource: 'progress_report' },
     { action: 'progress_reports:update', resource: 'progress_report' },
     { action: 'progress_reports:delete', resource: 'progress_report' },
+    { action: 'documents:read', resource: 'document' },
+    { action: 'documents:create', resource: 'document' },
+    { action: 'documents:update', resource: 'document' },
+    { action: 'documents:delete', resource: 'document' },
+    { action: 'documents:download', resource: 'document' },
   ];
 
   const orgAdminPermIds = [];

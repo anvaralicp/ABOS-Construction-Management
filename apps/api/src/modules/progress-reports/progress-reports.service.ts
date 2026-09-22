@@ -200,11 +200,11 @@ export class ProgressReportsService {
     const report = await this.findOne(context, reportId);
 
     const document = await this.prisma.document.findFirst({
-      where: { id: dto.document_id, organization_id: context.organizationId, deleted_at: null }
+      where: { id: dto.document_id, organization_id: context.organizationId, deleted_at: null, status: 'AVAILABLE' }
     });
 
     if (!document) {
-      throw new NotFoundException('Document not found.');
+      throw new NotFoundException('Document not found or not available.');
     }
 
     try {

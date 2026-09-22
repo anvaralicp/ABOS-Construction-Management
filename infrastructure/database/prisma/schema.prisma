@@ -814,6 +814,12 @@ model GstTaxConfig {
 // DOCUMENTS & ATTACHMENTS
 // ---------------------------------------------------------
 
+enum DocumentStatus {
+  PENDING
+  AVAILABLE
+  FAILED
+}
+
 model Document {
   id              String @id @default(uuid()) @db.Uuid
   organization_id String @db.Uuid
@@ -821,10 +827,14 @@ model Document {
   mime_type       String
   size_bytes      Int
   storage_key     String
+  status          DocumentStatus @default(PENDING)
+  created_by      String @db.Uuid
   
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
+  client_created_at DateTime?
+  version         Int      @default(1)
 
   organization Organization @relation(fields: [organization_id], references: [id], onDelete: Restrict)
 
@@ -835,6 +845,7 @@ model Document {
 
   @@unique([id, organization_id])
   @@index([organization_id])
+  @@index([organization_id, status])
   @@map("documents")
 }
 
@@ -847,6 +858,7 @@ model ExpenseAttachment {
   expense  Expense  @relation(fields: [expense_id, organization_id], references: [id, organization_id], onDelete: Restrict)
   document Document @relation(fields: [document_id, organization_id], references: [id, organization_id], onDelete: Restrict)
 
+  @@unique([organization_id, expense_id, document_id])
   @@index([organization_id, expense_id])
   @@map("expense_attachments")
 }

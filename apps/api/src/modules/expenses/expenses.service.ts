@@ -277,4 +277,80 @@ export class ExpensesService {
 
     return { success: true };
   }
+
+  // --- Attachments ---
+
+  async getAttachments(context: TenantContext, expenseId: string) {
+    await this.findOne(context, expenseId);
+
+    return this.prisma.expenseAttachment.findMany({
+      where: { expense_id: expenseId, organization_id: context.organizationId },
+      include: {
+        document: true
+      }
+    });
+  }
+
+  async attachDocument(context: TenantContext, expenseId: string, dto: { document_id: string }) {
+    await this.findOne(context, expenseId);
+
+    const document = await this.prisma.document.findFirst({
+      where: { id: dto.document_id, organization_id: context.organizationId, deleted_at: null, status: 'AVAILABLE' }
+    });
+
+    if (!document) {
+      throw new NotFoundException('Document not found or not available.');
+    }
+
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const attachment = await tx.expenseAttachment.create({
+          data: {
+            organization_id: context.organizationId,
+            expense_id: expenseId,
+            document_id: dto.document_id
+          }
+        });
+
+        await this.audit.logEvent(context, {
+          action: 'EXPENSE_ATTACHMENT_ADDED',
+          entityType: 'Expense',
+          entityId: expenseId,
+          metadata: { document_id: dto.document_id }
+        }, tx);
+
+        return attachment;
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ConflictException('Document is already attached to this expense.');
+      }
+      throw error;
+    }
+  }
+
+  async removeAttachment(context: TenantContext, expenseId: string, attachmentId: string) {
+    await this.findOne(context, expenseId);
+
+    const attachment = await this.prisma.expenseAttachment.findFirst({
+      where: { id: attachmentId, expense_id: expenseId, organization_id: context.organizationId }
+    });
+
+    if (!attachment) {
+      throw new NotFoundException('Attachment not found.');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.expenseAttachment.delete({ where: { id: attachmentId } });
+
+      await this.audit.logEvent(context, {
+        action: 'EXPENSE_ATTACHMENT_REMOVED',
+        entityType: 'Expense',
+        entityId: expenseId,
+        metadata: { document_id: attachment.document_id }
+      }, tx);
+
+      return { success: true };
+    });
+  }
 }

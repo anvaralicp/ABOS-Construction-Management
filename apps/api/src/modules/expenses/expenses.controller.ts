@@ -51,4 +51,25 @@ export class ExpensesController {
   async delete(@CurrentTenant() tenant: TenantContext, @Param('id') id: string) {
     return this.expensesService.delete(tenant, id);
   }
+
+  @Get(':id/attachments')
+  @RequirePermissions('expenses:read')
+  @ApiOperation({ summary: 'List attachments for an expense' })
+  async getAttachments(@CurrentTenant() tenant: TenantContext, @Param('id') id: string) {
+    return this.expensesService.getAttachments(tenant, id);
+  }
+
+  @Post(':id/attachments')
+  @RequirePermissions('expenses:write')
+  @ApiOperation({ summary: 'Attach a document to an expense' })
+  async attachDocument(@CurrentTenant() tenant: TenantContext, @Param('id') id: string, @Body() dto: { document_id: string }) {
+    return this.expensesService.attachDocument(tenant, id, dto);
+  }
+
+  @Delete(':id/attachments/:attachmentId')
+  @RequirePermissions('expenses:write')
+  @ApiOperation({ summary: 'Remove a document attachment from an expense' })
+  async removeAttachment(@CurrentTenant() tenant: TenantContext, @Param('id') id: string, @Param('attachmentId') attachmentId: string) {
+    return this.expensesService.removeAttachment(tenant, id, attachmentId);
+  }
 }

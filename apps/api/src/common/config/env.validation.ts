@@ -1,5 +1,5 @@
 import { plainToInstance } from 'class-transformer';
-import { IsEnum, IsNumber, IsString, validateSync } from 'class-validator';
+import { IsEnum, IsNumber, IsString, IsOptional, validateSync } from 'class-validator';
 
 enum Environment {
   Development = 'development',
@@ -34,6 +34,38 @@ class EnvironmentVariables {
 
   @IsNumber()
   RATE_LIMIT_MAX: number;
+
+  @IsString()
+  @IsOptional()
+  STORAGE_PROVIDER?: string;
+
+  @IsString()
+  @IsOptional()
+  STORAGE_BUCKET?: string;
+
+  @IsString()
+  @IsOptional()
+  STORAGE_REGION?: string;
+
+  @IsString()
+  @IsOptional()
+  STORAGE_ENDPOINT?: string;
+
+  @IsString()
+  @IsOptional()
+  STORAGE_ACCESS_KEY?: string;
+
+  @IsString()
+  @IsOptional()
+  STORAGE_SECRET_KEY?: string;
+
+  @IsNumber()
+  @IsOptional()
+  STORAGE_PRESIGNED_URL_EXPIRY?: number;
+
+  @IsNumber()
+  @IsOptional()
+  STORAGE_MAX_FILE_SIZE?: number;
 }
 
 export function validate(config: Record<string, unknown>) {
