@@ -24,9 +24,17 @@ enum UserStatus {
 }
 
 enum SubscriptionStatus {
+  TRIAL
   ACTIVE
-  CANCELED
   PAST_DUE
+  SUSPENDED
+  CANCELLED
+  EXPIRED
+}
+
+enum EntitlementType {
+  BOOLEAN
+  INTEGER
 }
 
 enum ProjectStatus {
@@ -233,17 +241,23 @@ model Permission {
 
 model SubscriptionPlan {
   id            String   @id @default(uuid()) @db.Uuid
+  code          String   @unique
   name          String
+  description   String?
   price         Int
   currency      String
   billing_cycle String
+  is_active     Boolean  @default(true)
+  sort_order    Int      @default(0)
   
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
+  deleted_at DateTime?
 
   entitlements  Entitlement[]
   subscriptions Subscription[]
 
+  @@index([code, is_active])
   @@map("subscription_plans")
 }
 
@@ -252,14 +266,23 @@ model Subscription {
   organization_id    String             @db.Uuid
   plan_id            String             @db.Uuid
   status             SubscriptionStatus
-  current_period_end DateTime
+  
+  started_at           DateTime?
+  current_period_start DateTime?
+  current_period_end   DateTime?
+  trial_ends_at        DateTime?
+  cancelled_at         DateTime?
+  ended_at             DateTime?
   
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
+  deleted_at DateTime?
 
   organization Organization     @relation(fields: [organization_id], references: [id], onDelete: Restrict)
   plan         SubscriptionPlan @relation(fields: [plan_id], references: [id], onDelete: Restrict)
 
+  @@index([organization_id, status])
+  @@index([organization_id, current_period_end])
   @@map("subscriptions")
 }
 
@@ -267,10 +290,13 @@ model Entitlement {
   id          String @id @default(uuid()) @db.Uuid
   plan_id     String @db.Uuid
   feature_key String
-  limit_value Int
+  type        EntitlementType
+  value_int   Int?
+  value_bool  Boolean?
   
   plan SubscriptionPlan @relation(fields: [plan_id], references: [id], onDelete: Restrict)
 
+  @@unique([plan_id, feature_key])
   @@map("entitlements")
 }
 

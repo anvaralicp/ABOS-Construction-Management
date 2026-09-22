@@ -121,6 +121,17 @@ async function main() {
     { action: 'notifications:read', resource: 'notification' },
     { action: 'notifications:update', resource: 'notification' },
     { action: 'notifications:delete', resource: 'notification' },
+    { action: 'subscriptions:read', resource: 'subscription' },
+    { action: 'subscriptions:create', resource: 'subscription' },
+    { action: 'subscriptions:update', resource: 'subscription' },
+    { action: 'subscriptions:delete', resource: 'subscription' },
+    { action: 'subscription_plans:read', resource: 'subscription_plan' },
+    { action: 'subscription_plans:create', resource: 'subscription_plan' },
+    { action: 'subscription_plans:update', resource: 'subscription_plan' },
+    { action: 'subscription_plans:delete', resource: 'subscription_plan' },
+    { action: 'entitlements:read', resource: 'entitlement' },
+    { action: 'entitlements:update', resource: 'entitlement' },
+
   ];
 
   const orgAdminPermIds = [];
