@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { AuditService } from '../../core/audit/audit.service';
-import { CreateOrganizationDto, AddMemberDto, ChangeRoleDto } from './dto/organization.dto';
+import { CreateOrganizationDto, AddMemberDto, ChangeRoleDto, UpdateOrganizationDto } from './dto/organization.dto';
 import { TenantContext } from '../../common/interfaces/tenant-context.interface';
 
 @Injectable()
@@ -25,6 +25,18 @@ export class OrganizationsService {
     const org = await this.prisma.$transaction(async (tx) => {
       const newOrg = await tx.organization.create({
         data: { name: dto.name },
+      });
+
+      await tx.organizationSettings.create({
+        data: {
+          organization_id: newOrg.id,
+          timezone: 'UTC',
+          currency: 'INR',
+          locale: 'en-IN',
+          date_format: 'DD/MM/YYYY',
+          number_format: 'IN',
+          week_start: 'MONDAY',
+        }
       });
 
       await tx.organizationMembership.create({
@@ -60,6 +72,31 @@ export class OrganizationsService {
       role: m.role.name,
       membershipId: m.id
     }));
+  }
+
+  
+  async updateProfile(context: TenantContext, dto: UpdateOrganizationDto) {
+    const org = await this.prisma.organization.update({
+      where: { id: context.organizationId },
+      data: {
+        name: dto.name,
+        legal_name: dto.legal_name,
+        code: dto.code,
+        address: dto.address,
+        phone: dto.phone,
+        email: dto.email,
+        website: dto.website,
+      }
+    });
+
+    await this.audit.logEvent(context, {
+      action: 'ORG_PROFILE_UPDATE',
+      entityType: 'Organization',
+      entityId: org.id,
+      metadata: { fields: Object.keys(dto) }
+    });
+
+    return org;
   }
 
   async getOrganization(context: TenantContext) {

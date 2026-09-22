@@ -1,6 +1,8 @@
-import { Controller, Post, Get, Body, UseGuards, Param, Delete, Put } from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards, Param, Delete, Put, Patch } from '@nestjs/common';
 import { OrganizationsService } from './organizations.service';
-import { CreateOrganizationDto, AddMemberDto, ChangeRoleDto } from './dto/organization.dto';
+import { CreateOrganizationDto, AddMemberDto, ChangeRoleDto, UpdateOrganizationDto } from './dto/organization.dto';
+import { UpdateOrganizationSettingsDto } from './dto/organization-settings.dto';
+import { OrganizationSettingsService } from './organization-settings.service';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiHeader } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { TenantGuard } from '../../common/guards/tenant.guard';
@@ -15,7 +17,10 @@ import { TenantContext } from '../../common/interfaces/tenant-context.interface'
 @UseGuards(JwtAuthGuard)
 @Controller('organizations')
 export class OrganizationsController {
-  constructor(private readonly orgService: OrganizationsService) {}
+  constructor(
+    private readonly orgService: OrganizationsService,
+    private readonly settingsService: OrganizationSettingsService
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new organization' })
@@ -38,6 +43,33 @@ export class OrganizationsController {
   async getCurrentOrganization(@CurrentTenant() tenant: TenantContext) {
     return this.orgService.getOrganization(tenant);
   }
+  @Patch('current')
+  @UseGuards(TenantGuard, PermissionsGuard)
+  @RequirePermissions('organization:update')
+  @ApiHeader({ name: 'x-organization-id', required: true })
+  @ApiOperation({ summary: 'Update details of the currently selected organization context' })
+  async updateCurrentOrganization(@CurrentTenant() tenant: TenantContext, @Body() dto: UpdateOrganizationDto) {
+    return this.orgService.updateProfile(tenant, dto);
+  }
+  @Get('current/settings')
+  @UseGuards(TenantGuard, PermissionsGuard)
+  @RequirePermissions('organization:settings:read')
+  @ApiHeader({ name: 'x-organization-id', required: true })
+  @ApiOperation({ summary: 'Get settings of the currently selected organization context' })
+  async getSettings(@CurrentTenant() tenant: TenantContext) {
+    return this.settingsService.getSettings(tenant);
+  }
+
+  @Patch('current/settings')
+  @UseGuards(TenantGuard, PermissionsGuard)
+  @RequirePermissions('organization:settings:update')
+  @ApiHeader({ name: 'x-organization-id', required: true })
+  @ApiOperation({ summary: 'Update settings of the currently selected organization context' })
+  async updateSettings(@CurrentTenant() tenant: TenantContext, @Body() dto: UpdateOrganizationSettingsDto) {
+    return this.settingsService.updateSettings(tenant, dto);
+  }
+
+
 
   @Get('members')
   @UseGuards(TenantGuard, PermissionsGuard)
