@@ -66,6 +66,10 @@ async function main() {
     { action: 'expenses:read', resource: 'expense' },
     { action: 'expenses:write', resource: 'expense' },
     { action: 'expenses:delete', resource: 'expense' },
+    { action: 'budgets:read', resource: 'budget' },
+    { action: 'budgets:write', resource: 'budget' },
+    { action: 'budgets:delete', resource: 'budget' },
+    { action: 'budgets:summary', resource: 'budget' },
   ];
 
   const orgAdminPermIds = [];
