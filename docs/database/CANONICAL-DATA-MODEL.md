@@ -79,6 +79,7 @@
 * **Creation/update timestamps:** No.
 * **Soft-delete:** No.
 * **Audit requirement:** No.
+* **Notes:** System privileges rely on a formalized `admin:all` permission attached to a system-level "Platform Admin" role.
 
 ### Subscription Plan
 * **Purpose:** Defines available pricing tiers and feature sets.

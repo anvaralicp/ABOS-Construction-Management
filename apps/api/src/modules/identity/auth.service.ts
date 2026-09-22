@@ -80,26 +80,29 @@ export class AuthService {
     let sessionId = existingSessionId;
 
     if (existingSessionId && expectedVersion !== undefined && expectedVersion !== null) {
-      try {
-        await this.prisma.userSession.update({
-          where: { id: existingSessionId, version: expectedVersion },
-          data: { 
-            refresh_token_hash: refreshTokenHash, 
-            expires_at: expiresAt,
-            version: { increment: 1 }
-          },
+      const result = await this.prisma.userSession.updateMany({
+        where: { 
+          id: existingSessionId, 
+          version: expectedVersion,
+          revoked_at: null,
+          expires_at: { gt: new Date() }
+        },
+        data: { 
+          refresh_token_hash: refreshTokenHash, 
+          expires_at: expiresAt,
+          version: { increment: 1 }
+        },
+      });
+
+      if (result.count === 0) {
+        // Token replay, concurrent refresh, or expired/revoked session detected. Revoke completely.
+        await this.prisma.userSession.updateMany({
+          where: { id: existingSessionId },
+          data: { revoked_at: new Date() }
         });
-      } catch (error) {
-        if (error.code === 'P2025') {
-          // Token replay or concurrent refresh detected. Revoke session completely.
-          await this.prisma.userSession.updateMany({
-            where: { id: existingSessionId },
-            data: { revoked_at: new Date() }
-          });
-          throw new UnauthorizedException('Security alert: Token replay or concurrent refresh detected. Session revoked.');
-        }
-        throw error;
+        throw new UnauthorizedException('Security alert: Token replay or concurrent refresh detected. Session revoked.');
       }
+
       await this.audit.logEvent({ userId, organizationId: null } as any, {
         action: 'SESSION_REFRESHED',
         entityType: 'UserSession',
