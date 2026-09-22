@@ -30,11 +30,11 @@ enum SubscriptionStatus {
 }
 
 enum ProjectStatus {
-  PLANNING
-  IN_PROGRESS
+  DRAFT
+  ACTIVE
   ON_HOLD
   COMPLETED
-  CANCELED
+  CANCELLED
 }
 
 enum ExpenseStatus {
@@ -271,17 +271,24 @@ model Notification {
 // ---------------------------------------------------------
 
 model Project {
-  id              String        @id @default(uuid()) @db.Uuid
-  organization_id String        @db.Uuid
-  name            String
-  location        String?
-  status          ProjectStatus @default(PLANNING)
-  start_date      DateTime?
-  end_date        DateTime?
+  id                String        @id @default(uuid()) @db.Uuid
+  organization_id   String        @db.Uuid
+  name              String
+  code              String
+  description       String?
+  address           String?
+  status            ProjectStatus @default(DRAFT)
+  start_date        DateTime?
+  expected_end_date DateTime?
+  actual_end_date   DateTime?
+  budget_amount     Int?
+  currency          String?       @default("USD")
   
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
+  created_by String?   @db.Uuid
+  updated_by String?   @db.Uuid
 
   organization Organization @relation(fields: [organization_id], references: [id], onDelete: Restrict)
 

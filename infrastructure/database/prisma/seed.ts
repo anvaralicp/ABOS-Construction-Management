@@ -48,6 +48,26 @@ async function main() {
     console.log(`Ensured role: Platform Admin`);
   }
 
+  const projectPermissions = [
+    { action: 'projects:read', resource: 'project' },
+    { action: 'projects:write', resource: 'project' },
+    { action: 'projects:delete', resource: 'project' },
+    { action: 'project_members:read', resource: 'project_member' },
+    { action: 'project_members:write', resource: 'project_member' },
+  ];
+
+  const orgAdminPermIds = [];
+  for (const p of projectPermissions) {
+    let perm = await prisma.permission.findFirst({
+      where: { action: p.action, resource: p.resource }
+    });
+    if (!perm) {
+      perm = await prisma.permission.create({ data: p });
+    }
+    orgAdminPermIds.push(perm.id);
+  }
+  console.log(`Ensured project permissions`);
+
   const orgAdminRole = await prisma.role.findFirst({
     where: { name: 'Organization Admin', is_system: true, organization_id: null }
   });
@@ -58,10 +78,21 @@ async function main() {
         name: 'Organization Admin',
         description: 'Tenant Administrator',
         is_system: true,
+        permissions: {
+          connect: orgAdminPermIds.map(id => ({ id }))
+        }
       }
     });
     console.log(`Created role: Organization Admin`);
   } else {
+    await prisma.role.update({
+      where: { id: orgAdminRole.id },
+      data: {
+        permissions: {
+          connect: orgAdminPermIds.map(id => ({ id }))
+        }
+      }
+    });
     console.log(`Ensured role: Organization Admin`);
   }
 

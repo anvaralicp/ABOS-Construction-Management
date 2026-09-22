@@ -143,7 +143,7 @@
 * **Owning module:** Projects
 * **Primary key:** `id` (UUID)
 * **Tenant ownership:** `organization_id`.
-* **Important fields:** `name`, `location`, `status`, `start_date`, `end_date`.
+* **Important fields:** `name`, `code`, `description`, `address`, `status`, `start_date`, `expected_end_date`, `actual_end_date`, `budget_amount`, `currency`, `created_by`, `updated_by`.
 * **Relationships:** Belongs to Organization.
 * **Creation/update timestamps:** Yes.
 * **Soft-delete:** Yes.

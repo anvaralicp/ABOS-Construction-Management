@@ -7,6 +7,8 @@ import { IdentityModule } from './modules/identity/identity.module';
 import { OrganizationsModule } from './modules/organizations/organizations.module';
 import { validate } from './common/config/env.validation';
 
+import { ProjectsModule } from './modules/projects/projects.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -26,6 +28,7 @@ import { validate } from './common/config/env.validation';
     HealthModule,
     IdentityModule,
     OrganizationsModule,
+    ProjectsModule,
   ],
 })
 export class AppModule {}
