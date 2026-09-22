@@ -326,12 +326,15 @@ model Category {
   id              String  @id @default(uuid()) @db.Uuid
   organization_id String  @db.Uuid
   name            String
+  description     String?
   parent_id       String? @db.Uuid
   is_active       Boolean @default(true)
   
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
+  created_by String?   @db.Uuid
+  updated_by String?   @db.Uuid
 
   organization Organization @relation(fields: [organization_id], references: [id], onDelete: Restrict)
   parent       Category?    @relation("CategoryToCategory", fields: [parent_id], references: [id], onDelete: Restrict) // Left for RLS

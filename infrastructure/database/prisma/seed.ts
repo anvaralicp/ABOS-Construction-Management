@@ -54,6 +54,9 @@ async function main() {
     { action: 'projects:delete', resource: 'project' },
     { action: 'project_members:read', resource: 'project_member' },
     { action: 'project_members:write', resource: 'project_member' },
+    { action: 'categories:read', resource: 'category' },
+    { action: 'categories:write', resource: 'category' },
+    { action: 'categories:delete', resource: 'category' },
   ];
 
   const orgAdminPermIds = [];
@@ -94,6 +97,28 @@ async function main() {
       }
     });
     console.log(`Ensured role: Organization Admin`);
+  }
+
+  // 3. Seed Default Categories per Organization
+  const organizations = await prisma.organization.findMany();
+  const defaultCategories = ['Labor', 'Materials', 'Subcontractor', 'Equipment', 'General & Administrative', 'Permits & Fees'];
+
+  for (const org of organizations) {
+    for (const catName of defaultCategories) {
+      const existingCat = await prisma.category.findFirst({
+        where: { organization_id: org.id, name: catName, parent_id: null }
+      });
+      if (!existingCat) {
+        await prisma.category.create({
+          data: {
+            organization_id: org.id,
+            name: catName,
+            is_active: true
+          }
+        });
+      }
+    }
+    console.log(`Ensured default categories for organization: ${org.id}`);
   }
 
   console.log('Seed completed.');

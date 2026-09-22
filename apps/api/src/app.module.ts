@@ -8,6 +8,7 @@ import { OrganizationsModule } from './modules/organizations/organizations.modul
 import { validate } from './common/config/env.validation';
 
 import { ProjectsModule } from './modules/projects/projects.module';
+import { CategoriesModule } from './modules/categories/categories.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { ProjectsModule } from './modules/projects/projects.module';
     IdentityModule,
     OrganizationsModule,
     ProjectsModule,
+    CategoriesModule,
   ],
 })
 export class AppModule {}

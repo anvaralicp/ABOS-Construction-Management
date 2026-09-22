@@ -165,7 +165,7 @@
 * **Owning module:** Categories
 * **Primary key:** `id` (UUID)
 * **Tenant ownership:** `organization_id`.
-* **Important fields:** `name`, `parent_id`, `is_active`.
+* **Important fields:** `name`, `description`, `parent_id`, `is_active`, `created_by`, `updated_by`.
 * **Relationships:** Belongs to Organization, Belongs to Category (Self).
 * **Creation/update timestamps:** Yes.
 * **Soft-delete:** Yes.
