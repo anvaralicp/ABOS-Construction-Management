@@ -1,0 +1,767 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ---------------------------------------------------------
+// ENUMS
+// ---------------------------------------------------------
+
+enum OrgStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  PAST_DUE
+}
+
+enum ProjectStatus {
+  PLANNING
+  IN_PROGRESS
+  ON_HOLD
+  COMPLETED
+  CANCELED
+}
+
+enum ExpenseStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  REJECTED
+  PAID
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELED
+}
+
+enum VendorStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum SyncOperation {
+  CREATE
+  UPDATE
+  DELETE
+}
+
+enum SyncStatus {
+  PENDING
+  SUCCESS
+  CONFLICT
+  FAILED
+}
+
+// ---------------------------------------------------------
+// PLATFORM ENTITIES
+// ---------------------------------------------------------
+
+model Organization {
+  id         String    @id @default(uuid()) @db.Uuid
+  name       String
+  status     OrgStatus @default(ACTIVE)
+  
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  // Relations
+  memberships       OrganizationMembership[]
+  projects          Project[]
+  subscriptions     Subscription[]
+  roles             Role[]
+  categories        Category[]
+  vendors           Vendor[]
+  materials         Material[]
+  equipment         Equipment[]
+  workforce_members WorkforceMember[]
+  documents         Document[]
+  sync_events       SyncQueueEvent[]
+  tax_configs       GstTaxConfig[]
+  reports           Report[]
+
+  @@map("organizations")
+}
+
+model User {
+  id            String     @id @default(uuid()) @db.Uuid
+  email         String     @unique
+  password_hash String
+  status        UserStatus @default(ACTIVE)
+  
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  // Relations
+  memberships   OrganizationMembership[]
+  notifications Notification[]
+  audit_events  AuditEvent[]
+
+  @@map("users")
+}
+
+model OrganizationMembership {
+  id              String   @id @default(uuid()) @db.Uuid
+  user_id         String   @db.Uuid
+  organization_id String   @db.Uuid
+  role_id         String   @db.Uuid
+  
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  user         User         @relation(fields: [user_id], references: [id], onDelete: Restrict)
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Restrict)
+  role         Role         @relation(fields: [role_id], references: [id], onDelete: Restrict)
+
+  project_memberships ProjectMember[]
+
+  @@unique([organization_id, user_id])
+  @@unique([id, organization_id])
+  @@map("organization_memberships")
+}
+
+model Role {
+  id              String   @id @default(uuid()) @db.Uuid
+  organization_id String?  @db.Uuid
+  name            String
+  description     String?
+  is_system       Boolean  @default(false)
+  
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  organization Organization? @relation(fields: [organization_id], references: [id], onDelete: Restrict)
+  permissions  Permission[]  @relation("RolePermissions")
+  memberships  OrganizationMembership[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id       String @id @default(uuid()) @db.Uuid
+  action   String
+  resource String
+
+  roles Role[] @relation("RolePermissions")
+
+  @@map("permissions")
+}
+
+model SubscriptionPlan {
+  id            String   @id @default(uuid()) @db.Uuid
+  name          String
+  price         Int
+  currency      String
+  billing_cycle String
+  
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  entitlements  Entitlement[]
+  subscriptions Subscription[]
+
+  @@map("subscription_plans")
+}
+
+model Subscription {
+  id                 String             @id @default(uuid()) @db.Uuid
+  organization_id    String             @db.Uuid
+  plan_id            String             @db.Uuid
+  status             SubscriptionStatus
+  current_period_end DateTime
+  
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  organization Organization     @relation(fields: [organization_id], references: [id], onDelete: Restrict)
+  plan         SubscriptionPlan @relation(fields: [plan_id], references: [id], onDelete: Restrict)
+
+  @@map("subscriptions")
+}
+
+model Entitlement {
+  id          String @id @default(uuid()) @db.Uuid
+  plan_id     String @db.Uuid
+  feature_key String
+  limit_value Int
+  
+  plan SubscriptionPlan @relation(fields: [plan_id], references: [id], onDelete: Restrict)
+
+  @@map("entitlements")
+}
+
+model AuditEvent {
+  id              String  @id @default(uuid()) @db.Uuid
+  organization_id String? @db.Uuid
+  actor_id        String? @db.Uuid
+  action          String
+  entity_type     String
+  entity_id       String  @db.Uuid
+  metadata        Json
+  
+  created_at DateTime @default(now())
+
+  actor User? @relation(fields: [actor_id], references: [id], onDelete: SetNull)
+
+  @@index([organization_id, created_at])
+  @@index([entity_type, entity_id])
+  @@map("audit_events")
+}
+
+model Notification {
+  id              String    @id @default(uuid()) @db.Uuid
+  organization_id String    @db.Uuid
+  user_id         String    @db.Uuid
+  title           String
+  body            String
+  type            String
+  read_at         DateTime?
+  
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Restrict)
+
+  @@index([organization_id, user_id])
+  @@map("notifications")
+}
+
+// ---------------------------------------------------------
+// CONSTRUCTION ENTITIES
+// ---------------------------------------------------------
+
+model Project {
+  id              String        @id @default(uuid()) @db.Uuid
+  organization_id String        @db.Uuid
+  name            String
+  location        String?
+  status          ProjectStatus @default(PLANNING)
+  start_date      DateTime?
+  end_date        DateTime?
+  
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Restrict)
+
+  members               ProjectMember[]
+  expenses              Expense[]
+  budgets               Budget[]
+  progress_reports      ProgressReport[]
+  daily_attendances     DailyAttendance[]
+  workforce_assignments ProjectWorkforceAssignment[]
+  vendor_payments       VendorPayment[]
+  project_documents     ProjectDocument[]
+
+  @@unique([id, organization_id])
+  @@index([organization_id, status])
+  @@map("projects")
+}
+
+model ProjectMember {
+  id                         String @id @default(uuid()) @db.Uuid
+  organization_id            String @db.Uuid
+  project_id                 String @db.Uuid
+  organization_membership_id String @db.Uuid
+  
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  project    Project                @relation(fields: [project_id, organization_id], references: [id, organization_id], onDelete: Restrict)
+  membership OrganizationMembership @relation(fields: [organization_membership_id, organization_id], references: [id, organization_id], onDelete: Restrict)
+
+  @@index([organization_id, project_id])
+  @@map("project_members")
+}
+
+model Category {
+  id              String  @id @default(uuid()) @db.Uuid
+  organization_id String  @db.Uuid
+  name            String
+  parent_id       String? @db.Uuid
+  is_active       Boolean @default(true)
+  
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Restrict)
+  parent       Category?    @relation("CategoryToCategory", fields: [parent_id], references: [id], onDelete: Restrict) // Left for RLS
+  children     Category[]   @relation("CategoryToCategory")
+
+  expenses     Expense[]
+  budget_lines BudgetLine[]
+
+  @@unique([organization_id, name, parent_id])
+  @@unique([id, organization_id])
+  @@map("categories")
+}
+
+model Expense {
+  id              String        @id @default(uuid()) @db.Uuid
+  organization_id String        @db.Uuid
+  project_id      String        @db.Uuid
+  category_id     String        @db.Uuid
+  vendor_id       String?       @db.Uuid
+  
+  item             String
+  quantity         Decimal
+  unit             String?
+  unit_price       Int
+  subtotal         Int
+  taxable_amount   Int
+  tax_rate         Decimal
+  tax_amount       Int
+  total_amount     Int
+  currency         String
+  
+  vendor_reference String?
+  invoice_number   String?
+  invoice_date     DateTime?
+  payment_status   PaymentStatus @default(PENDING)
+  payment_mode     String?
+  remarks          String?
+  
+  status           ExpenseStatus @default(DRAFT)
+  version          Int           @default(1)
+  
+  client_created_at DateTime?
+  client_updated_at DateTime?
+  
+  created_by  String? @db.Uuid
+  updated_by  String? @db.Uuid
+  approved_by String? @db.Uuid
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  project  Project  @relation(fields: [project_id, organization_id], references: [id, organization_id], onDelete: Restrict)
+  category Category @relation(fields: [category_id, organization_id], references: [id, organization_id], onDelete: Restrict)
+  vendor   Vendor?  @relation(fields: [vendor_id], references: [id], onDelete: Restrict) // Left for RLS due to nullable field
+
+  attachments     ExpenseAttachment[]
+  vendor_payments VendorPayment[]
+
+  @@unique([id, organization_id])
+  @@index([organization_id, project_id, status, created_at])
+  @@map("expenses")
+}
+
+model Vendor {
+  id              String       @id @default(uuid()) @db.Uuid
+  organization_id String       @db.Uuid
+  name            String
+  tax_id          String?
+  status          VendorStatus @default(ACTIVE)
+  
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Restrict)
+
+  contacts         VendorContact[]
+  expenses         Expense[]
+  material_rates   MaterialRate[]
+  vendor_payments  VendorPayment[]
+  vendor_documents VendorDocument[]
+
+  @@unique([organization_id, tax_id])
+  @@unique([id, organization_id])
+  @@map("vendors")
+}
+
+model VendorContact {
+  id              String  @id @default(uuid()) @db.Uuid
+  organization_id String  @db.Uuid
+  vendor_id       String  @db.Uuid
+  name            String
+  email           String?
+  phone           String?
+  
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  vendor Vendor @relation(fields: [vendor_id, organization_id], references: [id, organization_id], onDelete: Restrict)
+
+  @@index([organization_id, vendor_id])
+  @@map("vendor_contacts")
+}
+
+model VendorPayment {
+  id               String        @id @default(uuid()) @db.Uuid
+  organization_id  String        @db.Uuid
+  project_id       String?       @db.Uuid
+  vendor_id        String        @db.Uuid
+  expense_id       String?       @db.Uuid
+  
+  amount           Int
+  currency         String
+  payment_date     DateTime
+  payment_method   String?
+  reference_number String?
+  status           PaymentStatus @default(PENDING)
+  remarks          String?
+  version          Int           @default(1)
+  
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  vendor  Vendor   @relation(fields: [vendor_id, organization_id], references: [id, organization_id], onDelete: Restrict)
+  project Project? @relation(fields: [project_id], references: [id], onDelete: Restrict) // Left for RLS
+  expense Expense? @relation(fields: [expense_id], references: [id], onDelete: Restrict) // Left for RLS
+
+  @@index([organization_id, vendor_id, payment_date])
+  @@map("vendor_payments")
+}
+
+model Budget {
+  id              String @id @default(uuid()) @db.Uuid
+  organization_id String @db.Uuid
+  project_id      String @db.Uuid
+  total_amount    Int
+  currency        String
+  version         Int    @default(1)
+  
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  project Project      @relation(fields: [project_id, organization_id], references: [id, organization_id], onDelete: Restrict)
+  lines   BudgetLine[]
+
+  @@unique([id, organization_id, project_id])
+  @@index([organization_id, project_id])
+  @@map("budgets")
+}
+
+model BudgetLine {
+  id              String @id @default(uuid()) @db.Uuid
+  organization_id String @db.Uuid
+  project_id      String @db.Uuid
+  budget_id       String @db.Uuid
+  category_id     String @db.Uuid
+  amount          Int
+  currency        String
+  
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  budget   Budget   @relation(fields: [budget_id, organization_id, project_id], references: [id, organization_id, project_id], onDelete: Restrict)
+  category Category @relation(fields: [category_id, organization_id], references: [id, organization_id], onDelete: Restrict)
+
+  @@index([organization_id, project_id])
+  @@map("budget_lines")
+}
+
+model Material {
+  id              String @id @default(uuid()) @db.Uuid
+  organization_id String @db.Uuid
+  name            String
+  unit_of_measure String
+  
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  organization Organization   @relation(fields: [organization_id], references: [id], onDelete: Restrict)
+  rates        MaterialRate[]
+
+  @@unique([id, organization_id])
+  @@index([organization_id])
+  @@map("materials")
+}
+
+model MaterialRate {
+  id              String   @id @default(uuid()) @db.Uuid
+  organization_id String   @db.Uuid
+  material_id     String   @db.Uuid
+  vendor_id       String   @db.Uuid
+  rate            Int
+  currency        String
+  effective_date  DateTime
+  
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  material Material @relation(fields: [material_id, organization_id], references: [id, organization_id], onDelete: Restrict)
+  vendor   Vendor   @relation(fields: [vendor_id, organization_id], references: [id, organization_id], onDelete: Restrict)
+
+  @@index([organization_id, material_id])
+  @@map("material_rates")
+}
+
+model WorkforceMember {
+  id              String @id @default(uuid()) @db.Uuid
+  organization_id String @db.Uuid
+  name            String
+  trade           String?
+  hourly_rate     Int?
+  currency        String?
+  
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Restrict)
+  
+  assignments       ProjectWorkforceAssignment[]
+  daily_attendances DailyAttendance[]
+
+  @@unique([id, organization_id])
+  @@index([organization_id])
+  @@map("workforce_members")
+}
+
+model ProjectWorkforceAssignment {
+  id                  String    @id @default(uuid()) @db.Uuid
+  organization_id     String    @db.Uuid
+  project_id          String    @db.Uuid
+  workforce_member_id String    @db.Uuid
+  role                String?
+  rate                Int?
+  currency            String?
+  start_date          DateTime?
+  end_date            DateTime?
+  status              String    @default("ACTIVE")
+  
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  project          Project         @relation(fields: [project_id, organization_id], references: [id, organization_id], onDelete: Restrict)
+  workforce_member WorkforceMember @relation(fields: [workforce_member_id, organization_id], references: [id, organization_id], onDelete: Restrict)
+
+  @@index([organization_id, project_id])
+  @@map("project_workforce_assignments")
+}
+
+model Equipment {
+  id              String  @id @default(uuid()) @db.Uuid
+  organization_id String  @db.Uuid
+  name            String
+  identifier      String?
+  status          String  @default("AVAILABLE")
+  
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Restrict)
+
+  @@unique([id, organization_id])
+  @@index([organization_id])
+  @@map("equipment")
+}
+
+model ProgressReport {
+  id              String    @id @default(uuid()) @db.Uuid
+  organization_id String    @db.Uuid
+  project_id      String    @db.Uuid
+  
+  report_date    DateTime
+  summary        String?
+  work_completed String?
+  issues         String?
+  delays         String?
+  next_day_plan  String?
+  status         String    @default("DRAFT")
+  prepared_by    String?   @db.Uuid
+  
+  version           Int       @default(1)
+  client_created_at DateTime?
+  client_updated_at DateTime?
+  
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  project Project @relation(fields: [project_id, organization_id], references: [id, organization_id], onDelete: Restrict)
+
+  attachments ProgressReportAttachment[]
+
+  @@unique([id, organization_id])
+  @@index([organization_id, project_id, report_date])
+  @@map("progress_reports")
+}
+
+model DailyAttendance {
+  id                  String   @id @default(uuid()) @db.Uuid
+  organization_id     String   @db.Uuid
+  project_id          String   @db.Uuid
+  workforce_member_id String   @db.Uuid
+  date                DateTime
+  hours               Decimal
+  
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  project          Project         @relation(fields: [project_id, organization_id], references: [id, organization_id], onDelete: Restrict)
+  workforce_member WorkforceMember @relation(fields: [workforce_member_id, organization_id], references: [id, organization_id], onDelete: Restrict)
+
+  @@index([organization_id, project_id, date])
+  @@map("daily_attendances")
+}
+
+model Report {
+  id              String @id @default(uuid()) @db.Uuid
+  organization_id String @db.Uuid
+  name            String
+  configuration   Json
+  
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Restrict)
+
+  @@index([organization_id])
+  @@map("reports")
+}
+
+model GstTaxConfig {
+  id              String  @id @default(uuid()) @db.Uuid
+  organization_id String  @db.Uuid
+  name            String
+  rate_percentage Decimal
+  is_active       Boolean @default(true)
+  
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Restrict)
+
+  @@index([organization_id])
+  @@map("gst_tax_configs")
+}
+
+// ---------------------------------------------------------
+// DOCUMENTS & ATTACHMENTS
+// ---------------------------------------------------------
+
+model Document {
+  id              String @id @default(uuid()) @db.Uuid
+  organization_id String @db.Uuid
+  filename        String
+  mime_type       String
+  size_bytes      Int
+  storage_key     String
+  
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Restrict)
+
+  expense_attachments         ExpenseAttachment[]
+  progress_report_attachments ProgressReportAttachment[]
+  project_documents           ProjectDocument[]
+  vendor_documents            VendorDocument[]
+
+  @@unique([id, organization_id])
+  @@index([organization_id])
+  @@map("documents")
+}
+
+model ExpenseAttachment {
+  id              String @id @default(uuid()) @db.Uuid
+  organization_id String @db.Uuid
+  expense_id      String @db.Uuid
+  document_id     String @db.Uuid
+  
+  expense  Expense  @relation(fields: [expense_id, organization_id], references: [id, organization_id], onDelete: Restrict)
+  document Document @relation(fields: [document_id, organization_id], references: [id, organization_id], onDelete: Restrict)
+
+  @@index([organization_id, expense_id])
+  @@map("expense_attachments")
+}
+
+model ProgressReportAttachment {
+  id                 String @id @default(uuid()) @db.Uuid
+  organization_id    String @db.Uuid
+  progress_report_id String @db.Uuid
+  document_id        String @db.Uuid
+  
+  progress_report ProgressReport @relation(fields: [progress_report_id, organization_id], references: [id, organization_id], onDelete: Restrict)
+  document        Document       @relation(fields: [document_id, organization_id], references: [id, organization_id], onDelete: Restrict)
+
+  @@index([organization_id, progress_report_id])
+  @@map("progress_report_attachments")
+}
+
+model ProjectDocument {
+  id              String @id @default(uuid()) @db.Uuid
+  organization_id String @db.Uuid
+  project_id      String @db.Uuid
+  document_id     String @db.Uuid
+  
+  project  Project  @relation(fields: [project_id, organization_id], references: [id, organization_id], onDelete: Restrict)
+  document Document @relation(fields: [document_id, organization_id], references: [id, organization_id], onDelete: Restrict)
+
+  @@index([organization_id, project_id])
+  @@map("project_documents")
+}
+
+model VendorDocument {
+  id              String @id @default(uuid()) @db.Uuid
+  organization_id String @db.Uuid
+  vendor_id       String @db.Uuid
+  document_id     String @db.Uuid
+  
+  vendor   Vendor   @relation(fields: [vendor_id, organization_id], references: [id, organization_id], onDelete: Restrict)
+  document Document @relation(fields: [document_id, organization_id], references: [id, organization_id], onDelete: Restrict)
+
+  @@index([organization_id, vendor_id])
+  @@map("vendor_documents")
+}
+
+// ---------------------------------------------------------
+// INFRASTRUCTURE / OFFLINE
+// ---------------------------------------------------------
+
+model SyncQueueEvent {
+  id                String        @id @default(uuid()) @db.Uuid
+  organization_id   String        @db.Uuid
+  device_id         String
+  user_id           String        @db.Uuid
+  entity_type       String
+  entity_id         String        @db.Uuid
+  operation         SyncOperation
+  client_timestamp  DateTime
+  server_timestamp  DateTime?
+  sync_status       SyncStatus    @default(PENDING)
+  retry_count       Int           @default(0)
+  error_information Json?
+  
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Restrict)
+
+  @@index([organization_id, sync_status])
+  @@map("sync_queue_events")
+}
