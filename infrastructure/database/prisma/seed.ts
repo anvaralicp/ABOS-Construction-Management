@@ -103,6 +103,15 @@ async function main() {
     { action: 'documents:update', resource: 'document' },
     { action: 'documents:delete', resource: 'document' },
     { action: 'documents:download', resource: 'document' },
+    { action: 'reports:read', resource: 'report' },
+    { action: 'reports:project-summary', resource: 'report' },
+    { action: 'reports:financial', resource: 'report' },
+    { action: 'reports:expenses', resource: 'report' },
+    { action: 'reports:budget', resource: 'report' },
+    { action: 'reports:workforce', resource: 'report' },
+    { action: 'reports:vendors', resource: 'report' },
+    { action: 'reports:equipment', resource: 'report' },
+    { action: 'reports:progress', resource: 'report' },
   ];
 
   const orgAdminPermIds = [];

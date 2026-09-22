@@ -18,6 +18,7 @@ import { VendorPaymentsModule } from './modules/vendor-payments/vendor-payments.
 import { EquipmentModule } from './modules/equipment/equipment.module';
 import { ProgressReportsModule } from './modules/progress-reports/progress-reports.module';
 import { DocumentsModule } from './modules/documents/documents.module';
+import { ReportsModule } from './modules/reports/reports.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { DocumentsModule } from './modules/documents/documents.module';
     EquipmentModule,
     ProgressReportsModule,
     DocumentsModule,
+    ReportsModule,
   ],
 })
 export class AppModule {}
