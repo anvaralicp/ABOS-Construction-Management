@@ -96,7 +96,7 @@ export default function VendorDetailPage({ params }: { params: { id: string } })
 
   const openAddContact = () => {
     setEditingContact(null);
-    setContactForm({ name: '', designation: '', email: '', phone: '', alternate_phone: '', is_primary: contacts.length === 0 });
+    setContactForm({ name: '', designation: '', email: '', phone: '', alternate_phone: '', is_primary: false });
     setContactError(null);
     setShowContactDialog(true);
   };
@@ -116,8 +116,9 @@ export default function VendorDetailPage({ params }: { params: { id: string } })
   };
 
   const handleContactChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
-    setContactForm({ ...contactForm, [e.target.name]: value });
+    const { name, type, checked, value } = e.target;
+    const finalValue = type === 'checkbox' ? checked : value;
+    setContactForm(prev => ({ ...prev, [name]: finalValue }));
   };
 
   const handleSaveContact = async (e: React.FormEvent) => {
@@ -331,3 +332,7 @@ export default function VendorDetailPage({ params }: { params: { id: string } })
     </div>
   );
 }
+
+
+
+

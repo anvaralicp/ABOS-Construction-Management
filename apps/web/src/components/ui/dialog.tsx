@@ -6,7 +6,11 @@ export function Dialog({ open, onClose, children }: { open: boolean, onClose: ()
 
   useEffect(() => {
     if (open) {
-      previousFocusRef.current = document.activeElement as HTMLElement;
+      if (!dialogRef.current?.contains(document.activeElement)) {
+        previousFocusRef.current = document.activeElement as HTMLElement;
+        dialogRef.current?.focus();
+      }
+
       
       const focusableElementsString = 'a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), iframe, object, embed, [tabindex="0"], [contenteditable]';
       
@@ -44,7 +48,7 @@ export function Dialog({ open, onClose, children }: { open: boolean, onClose: ()
         }
       };
       
-      dialogRef.current?.focus();
+      
       document.addEventListener('keydown', handleKeyDown);
       
       return () => {
@@ -85,3 +89,4 @@ export function DialogContent({ children }: { children: React.ReactNode }) {
 export function DialogFooter({ children }: { children: React.ReactNode }) {
   return <div className="px-6 py-4 bg-surface-50 flex justify-end space-x-2">{children}</div>;
 }
+

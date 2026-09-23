@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, act } from '@testing-library/react';
+import { render, act, waitFor } from '@testing-library/react';
 import { AuthProvider } from '../lib/auth-context';
 
 const mockPush = jest.fn();
@@ -27,12 +27,11 @@ describe('AuthContext', () => {
       window.dispatchEvent(new CustomEvent('auth:401'));
     });
     
-    // fetch is called to /api/auth/logout once
-    expect(mockFetch).toHaveBeenCalledTimes(1);
-    expect(mockFetch).toHaveBeenCalledWith('/api/auth/logout', { method: 'POST' });
-    
-    // router.push is called to /login once
-    expect(mockPush).toHaveBeenCalledTimes(1);
-    expect(mockPush).toHaveBeenCalledWith('/login');
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(mockFetch).toHaveBeenCalledWith('/api/auth/logout', { method: 'POST' });
+      expect(mockPush).toHaveBeenCalledTimes(1);
+      expect(mockPush).toHaveBeenCalledWith('/login');
+    });
   });
 });

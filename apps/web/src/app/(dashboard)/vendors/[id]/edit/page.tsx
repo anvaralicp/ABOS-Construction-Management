@@ -60,7 +60,7 @@ export default function EditVendorPage({ params }: { params: { id: string } }) {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -153,3 +153,4 @@ export default function EditVendorPage({ params }: { params: { id: string } }) {
     </div>
   );
 }
+

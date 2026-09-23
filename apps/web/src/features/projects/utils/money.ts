@@ -69,4 +69,4 @@ export function parseMoneyToMinorUnits(majorUnitsString: string | null | undefin
   }
 
   return { kind: 'valid', minorUnits: totalMinor };
-}\n
+}
