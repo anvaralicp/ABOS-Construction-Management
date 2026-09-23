@@ -4,12 +4,13 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/lib/permissions';
 import { 
-  LayoutDashboard, FolderKanban, Receipt, PieChart, Users, HardHat, FileText, Settings, Shield, X
+  LayoutDashboard, FolderKanban, Receipt, PieChart, Users, HardHat, FileText, Settings, Shield, X, Wallet
 } from 'lucide-react';
 
 const NAVIGATION = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, permission: '*' },
   { name: 'Projects', href: '/projects', icon: FolderKanban, permission: 'projects:read' },
+  { name: 'Budgets', href: '/budgets', icon: Wallet, permission: 'budgets:read' },
   { name: 'Expenses', href: '/expenses', icon: Receipt, permission: 'expenses:read' },
   { name: 'Reports', href: '/reports', icon: PieChart, permission: 'reports:read' },
   { name: 'Workforce', href: '/workforce', icon: Users, permission: 'workforce:read' },
