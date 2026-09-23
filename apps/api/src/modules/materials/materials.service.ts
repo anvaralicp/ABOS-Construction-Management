@@ -95,6 +95,10 @@ export class MaterialsService {
   async update(context: TenantContext, id: string, dto: UpdateMaterialDto) {
     const existing = await this.findOne(context, id);
 
+    if (existing.version !== dto.version) {
+      throw new ConflictException(`Version mismatch. Expected ${existing.version}, but got ${dto.version}.`);
+    }
+
     if (dto.code && dto.code !== existing.code) {
       const duplicate = await this.prisma.material.findUnique({
         where: { organization_id_code: { organization_id: context.organizationId, code: dto.code } }
@@ -104,17 +108,24 @@ export class MaterialsService {
       }
     }
 
-    const updated = await this.prisma.material.update({
-      where: { id_organization_id: { id, organization_id: context.organizationId } },
+    const result = await this.prisma.material.updateMany({
+      where: { id, organization_id: context.organizationId, version: dto.version, deleted_at: null },
       data: {
         name: dto.name !== undefined ? dto.name : existing.name,
         code: dto.code !== undefined ? dto.code : existing.code,
         description: dto.description !== undefined ? dto.description : existing.description,
         unit_of_measure: dto.unit_of_measure !== undefined ? dto.unit_of_measure : existing.unit_of_measure,
         status: dto.status !== undefined ? dto.status : existing.status,
+        version: { increment: 1 },
         updated_by: context.userId,
       }
     });
+
+    if (result.count === 0) {
+      throw new ConflictException('The material was updated by another user.');
+    }
+
+    const updated = await this.findOne(context, id);
 
     const action = dto.status !== undefined && dto.status !== existing.status 
       ? (dto.status === 'ACTIVE' ? 'MATERIAL_ACTIVATED' : 'MATERIAL_DEACTIVATED') 

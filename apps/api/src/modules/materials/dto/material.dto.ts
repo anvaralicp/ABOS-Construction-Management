@@ -31,6 +31,10 @@ export class CreateMaterialDto {
 }
 
 export class UpdateMaterialDto {
+  @ApiProperty()
+  @IsInt()
+  version: number;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()

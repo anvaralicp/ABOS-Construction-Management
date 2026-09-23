@@ -19,6 +19,7 @@ describe('MaterialsService', () => {
         findMany: jest.fn(),
         count: jest.fn(),
         update: jest.fn(),
+        updateMany: jest.fn(),
       },
       materialRate: {
         create: jest.fn(),
@@ -73,6 +74,69 @@ describe('MaterialsService', () => {
       await expect(service.create(mockContext, { name: 'Test', code: 'DUP', unit_of_measure: 'kg' }))
         .rejects.toThrow(ConflictException);
     });
+
+    it('should successfully update material when version matches', async () => {
+      const existing = { id: 'mat-1', name: 'Old', version: 1, deleted_at: null };
+      prisma.material.findUnique.mockResolvedValue(existing);
+      prisma.material.updateMany.mockResolvedValue({ count: 1 });
+      // updated mock
+      prisma.material.findUnique.mockResolvedValueOnce(existing).mockResolvedValueOnce({ ...existing, name: 'New', version: 2 });
+
+      const dto = { name: 'New', version: 1 };
+      const result = await service.update(mockContext, 'mat-1', dto);
+
+      expect(prisma.material.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: { id: 'mat-1', organization_id: 'org-1', version: 1 },
+        data: expect.objectContaining({ name: 'New', version: { increment: 1 } })
+      }));
+      expect(result.version).toEqual(2);
+    });
+
+    it('should reject update on stale version conflict', async () => {
+      prisma.material.findUnique.mockResolvedValue({ id: 'mat-1', name: 'Old', version: 2, deleted_at: null });
+
+      const dto = { name: 'New', version: 1 };
+      await expect(service.update(mockContext, 'mat-1', dto))
+        .rejects.toThrow(ConflictException);
+      
+      expect(prisma.material.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('should reject concurrent update if updated by another user', async () => {
+      const existing = { id: 'mat-1', name: 'Old', version: 1, deleted_at: null };
+      prisma.material.findUnique.mockResolvedValue(existing);
+      prisma.material.updateMany.mockResolvedValue({ count: 0 }); // simulate concurrent modification between find and updateMany
+
+      const dto = { name: 'New', version: 1 };
+      await expect(service.update(mockContext, 'mat-1', dto))
+        .rejects.toThrow(ConflictException);
+    });
+
+    it('should reject update of deleted material', async () => {
+      prisma.material.findUnique.mockResolvedValue({ id: 'mat-1', name: 'Old', version: 1, deleted_at: new Date() });
+
+      const dto = { name: 'New', version: 1 };
+      await expect(service.update(mockContext, 'mat-1', dto))
+        .rejects.toThrow(NotFoundException);
+    });
+
+    it('should reject update if material is archived concurrently before updateMany', async () => {
+      const existing = { id: 'mat-1', name: 'Old', version: 1, deleted_at: null };
+      // findOne succeeds, meaning it was not deleted yet
+      prisma.material.findUnique.mockResolvedValue(existing);
+      // However, updateMany will simulate 0 rows matched (because another process set deleted_at)
+      prisma.material.updateMany.mockResolvedValue({ count: 0 });
+
+      const dto = { name: 'New', version: 1 };
+      await expect(service.update(mockContext, 'mat-1', dto)).rejects.toThrow(ConflictException);
+
+      // Verify that updateMany included deleted_at: null in its condition
+      expect(prisma.material.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.objectContaining({ id: 'mat-1', version: 1, deleted_at: null })
+      }));
+    });
+
+
   });
 
   describe('Material Rates', () => {

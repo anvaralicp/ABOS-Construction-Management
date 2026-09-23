@@ -687,6 +687,7 @@ model Material {
   description     String?
   unit_of_measure String
   status          MaterialStatus @default(ACTIVE)
+    version         Int @default(1)
   
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
