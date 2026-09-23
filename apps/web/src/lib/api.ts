@@ -16,8 +16,8 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
   const token = getAccessToken();
   const orgId = typeof window !== 'undefined' ? localStorage.getItem('abos_org_id') : null;
   
-  const headers: HeadersInit = {
-    ...options.headers,
+  const headers: Record<string, string> = {
+    ...options.headers as Record<string, string>,
   };
 
   if (!(options.body instanceof FormData) && !headers['Content-Type']) {
