@@ -62,7 +62,7 @@ export default function CategoriesPage() {
             <Link href={`/categories/${node.id}`} className="text-surface-900 hover:text-brand-600 hover:underline">
               {node.name}
             </Link>
-            {!node.is_active && <Badge variant="secondary">Inactive</Badge>}
+            {!node.is_active && <Badge variant="default">Inactive</Badge>}
           </div>
           <div className="flex items-center gap-2 mt-2 sm:mt-0" style={{ paddingLeft: `${depth > 0 ? depth * 1.5 + 1.5 : 0}rem` }}>
             <Link href={`/categories/${node.id}`}>
@@ -118,7 +118,7 @@ export default function CategoriesPage() {
             <div className="p-6">
               <EmptyState 
                 title="No categories found" 
-                message={searchQuery ? 'Adjust your search terms.' : 'Create your first category to get started.'} 
+                description={searchQuery ? 'Adjust your search terms.' : 'Create your first category to get started.'} 
               />
             </div>
           ) : (

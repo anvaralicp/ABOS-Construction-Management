@@ -135,7 +135,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm font-medium text-surface-500">Status</p>
-                  <Badge className="mt-1" variant={category.is_active ? 'success' : 'secondary'}>
+                  <Badge className="mt-1" variant={category.is_active ? 'success' : 'default'}>
                     {category.is_active ? 'Active' : 'Inactive'}
                   </Badge>
                 </div>
@@ -162,7 +162,7 @@ export default function CategoryDetailPage({ params }: { params: { id: string } 
                         <Link href={`/categories/${child.id}`} className="font-medium text-surface-900 hover:text-brand-600 hover:underline">
                           {child.name}
                         </Link>
-                        {!child.is_active && <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Inactive</Badge>}
+                        {!child.is_active && <Badge variant="default" className="text-[10px] px-1.5 py-0">Inactive</Badge>}
                       </div>
                       <Link href={`/categories/${child.id}`}>
                         <Button size="sm" variant="ghost">View</Button>

@@ -8,14 +8,15 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { ErrorState, LoadingState } from '@/components/ui/states';
 import { Dialog, DialogContent, DialogHeader, DialogFooter } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { FormField } from '@/components/ui/form';
 import { usePermissions } from '@/lib/permissions';
 import { useAuth } from '@/lib/auth-context';
 import { expensesApi } from '@/features/expenses/api/expenses.api';
+import { documentsApi } from '@/features/documents/api/documents.api';
 import { Expense, ExpenseAttachment } from '@/features/expenses/types';
+import { DocumentUploadDialog } from '@/features/documents/components/DocumentUploadDialog';
+import { Document } from '@/features/documents/types';
 import { formatMoney } from '@/features/projects/utils/money';
-import { Trash2, FileText, Plus } from 'lucide-react';
+import { Trash2, Download, FileText, Plus } from 'lucide-react';
 
 export default function ExpenseDetailPage() {
   const { id } = useParams() as { id: string };
@@ -31,8 +32,6 @@ export default function ExpenseDetailPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   
   const [showAttachDialog, setShowAttachDialog] = useState(false);
-  const [attachDocId, setAttachDocId] = useState('');
-  const [attachLoading, setAttachLoading] = useState(false);
   const [attachError, setAttachError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -66,21 +65,16 @@ export default function ExpenseDetailPage() {
     }
   };
 
-  const handleAttach = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!attachDocId.trim()) return;
-    setAttachLoading(true);
+  const handleUploadSuccess = async (doc: Document) => {
     setAttachError(null);
     try {
-      await expensesApi.attachDocument(id, attachDocId.trim());
+      await expensesApi.attachDocument(id, doc.id);
       const att = await expensesApi.getAttachments(id);
       setAttachments(att);
       setShowAttachDialog(false);
-      setAttachDocId('');
     } catch (err: any) {
-      setAttachError(err.message || 'Failed to attach document');
-    } finally {
-      setAttachLoading(false);
+      setAttachError(err.message || 'Failed to attach document to the expense.');
+      // Dialog remains open showing the error
     }
   };
 
@@ -93,6 +87,15 @@ export default function ExpenseDetailPage() {
     }
   };
 
+  const handleDownload = async (documentId: string) => {
+    try {
+      const res = await documentsApi.getDownloadUrl(documentId);
+      window.location.href = res.downloadUrl;
+    } catch (err: any) {
+      alert(err.message || 'Failed to get download URL');
+    }
+  };
+
   if (permsLoading || loading) return <LoadingState />;
   if (!hasPermission('expenses:read')) return <ErrorState message="You do not have permission to view expenses." />;
   if (error) return <ErrorState message={error} />;
@@ -100,6 +103,8 @@ export default function ExpenseDetailPage() {
 
   const canWrite = hasPermission('expenses:write');
   const canDelete = hasPermission('expenses:delete');
+  const canCreateDocument = hasPermission('documents:create');
+  const canDownloadDocument = hasPermission('documents:download');
 
   return (
     <div className="space-y-6">
@@ -182,7 +187,7 @@ export default function ExpenseDetailPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Attachments</CardTitle>
-              {canWrite && (
+              {canWrite && canCreateDocument && (
                 <Button size="sm" variant="outline" onClick={() => setShowAttachDialog(true)}>
                   <Plus className="w-4 h-4 mr-2" />
                   Attach Document
@@ -198,15 +203,29 @@ export default function ExpenseDetailPage() {
                     <li key={att.id} className="py-3 flex items-center justify-between">
                       <div className="flex items-center">
                         <FileText className="w-5 h-5 text-surface-400 mr-3" />
-                        <span className="text-sm font-medium text-surface-900">
-                          {att.document?.filename || att.document_id}
-                        </span>
+                        <div>
+                          <p className="text-sm font-medium text-surface-900">
+                            {att.document?.filename || att.document_id}
+                          </p>
+                          {att.document && (
+                            <p className="text-xs text-surface-500">
+                              {(att.document.size_bytes / 1024 / 1024).toFixed(2)} MB • {att.document.mime_type.split('/')[1] || att.document.mime_type}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                      {canWrite && (
-                        <Button variant="ghost" size="sm" className="text-danger-600 h-8 w-8 p-0" onClick={() => handleRemoveAttachment(att.id)}>
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      )}
+                      <div className="flex gap-2">
+                        {canDownloadDocument && att.document && (
+                          <Button aria-label="Download Attachment" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleDownload(att.document_id)}>
+                            <Download className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {canWrite && (
+                          <Button aria-label="Delete Attachment" variant="ghost" size="sm" className="text-danger-600 h-8 w-8 p-0" onClick={() => handleRemoveAttachment(att.id)}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -285,26 +304,26 @@ export default function ExpenseDetailPage() {
         </DialogFooter>
       </Dialog>
 
-      <Dialog open={showAttachDialog} onClose={() => setShowAttachDialog(false)}>
-        <form onSubmit={handleAttach}>
+      <DocumentUploadDialog
+        open={showAttachDialog}
+        onOpenChange={setShowAttachDialog}
+        onUploadSuccess={handleUploadSuccess}
+      />
+
+      {attachError && (
+        <Dialog open={!!attachError} onClose={() => setAttachError(null)}>
           <DialogHeader>
-            <h2 className="text-lg font-medium text-surface-900">Attach Document</h2>
+            <h2 className="text-lg font-medium text-danger-600">Attachment Failed</h2>
           </DialogHeader>
           <DialogContent>
-            {attachError && <p className="mb-3 text-sm text-danger-600 bg-danger-50 p-2 rounded">{attachError}</p>}
-            <p className="text-sm text-surface-500 mb-4">Enter an existing Document ID to attach it to this expense.</p>
-            <FormField label="Document ID" htmlFor="docId">
-              <Input id="docId" name="docId" required value={attachDocId} onChange={e => setAttachDocId(e.target.value)} />
-            </FormField>
+            <p className="text-sm text-surface-900">{attachError}</p>
+            <p className="text-xs text-surface-500 mt-2">The document was uploaded successfully but failed to associate with this expense.</p>
           </DialogContent>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setShowAttachDialog(false)}>Cancel</Button>
-            <Button type="submit" disabled={attachLoading || !attachDocId.trim()}>
-              {attachLoading ? 'Attaching...' : 'Attach'}
-            </Button>
+            <Button onClick={() => setAttachError(null)}>Close</Button>
           </DialogFooter>
-        </form>
-      </Dialog>
+        </Dialog>
+      )}
     </div>
   );
 }

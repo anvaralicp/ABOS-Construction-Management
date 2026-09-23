@@ -18,13 +18,23 @@ export function LoadingState() {
   );
 }
 
-export function ErrorState({ message }: { message: string }) {
+export function ErrorState({ message, onRetry }: { message: string, onRetry?: () => void }) {
   return (
     <div className="rounded-md bg-red-50 p-4">
       <div className="flex">
         <div className="ml-3">
           <h3 className="text-sm font-medium text-red-800">Error</h3>
-          <div className="mt-2 text-sm text-red-700"><p>{message}</p></div>
+          <div className="mt-2 text-sm text-red-700">
+            <p>{message}</p>
+            {onRetry && (
+              <button 
+                onClick={onRetry}
+                className="mt-3 text-xs font-medium text-red-800 hover:text-red-900 bg-red-100 hover:bg-red-200 px-3 py-1 rounded"
+              >
+                Try Again
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

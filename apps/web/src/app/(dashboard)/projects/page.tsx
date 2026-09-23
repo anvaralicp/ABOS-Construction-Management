@@ -13,8 +13,8 @@ import { formatMoney } from '@/features/projects/utils/money';
 import { usePermissions } from '@/lib/permissions';
 
 const StatusBadge = ({ status }: { status: ProjectStatus }) => {
-  const statusConfig: Record<ProjectStatus, { label: string, variant: 'default' | 'success' | 'warning' | 'danger' | 'secondary' }> = {
-    DRAFT: { label: 'Draft', variant: 'secondary' },
+  const statusConfig: Record<ProjectStatus, { label: string, variant: 'default' | 'success' | 'warning' | 'danger' }> = {
+    DRAFT: { label: 'Draft', variant: 'default' },
     ACTIVE: { label: 'Active', variant: 'success' },
     ON_HOLD: { label: 'On Hold', variant: 'warning' },
     COMPLETED: { label: 'Completed', variant: 'default' },

@@ -98,8 +98,9 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
   if (loadingInitial) return <LoadingState />;
   if (error && !category) return (
     <div className="space-y-4">
-      <ErrorState message={error} onRetry={loadData} />
-      <div className="flex justify-center">
+      <ErrorState message={error} />
+      <div className="flex justify-center flex-col gap-2 items-center">
+        <Button onClick={loadData} variant="outline" size="sm">Retry</Button>
         <Link href={`/categories/${id}`}><Button variant="outline">Back to Category</Button></Link>
       </div>
     </div>

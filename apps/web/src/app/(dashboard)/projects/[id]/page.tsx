@@ -193,7 +193,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm font-medium text-surface-500">Status</p>
-                  <Badge className="mt-1" variant={project.status === 'ACTIVE' ? 'success' : project.status === 'CANCELLED' ? 'danger' : project.status === 'ON_HOLD' ? 'warning' : 'secondary'}>
+                  <Badge className="mt-1" variant={project.status === 'ACTIVE' ? 'success' : project.status === 'CANCELLED' ? 'danger' : project.status === 'ON_HOLD' ? 'warning' : 'default'}>
                     {project.status}
                   </Badge>
                 </div>
@@ -300,12 +300,14 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
         <DialogHeader>
           <h2 className="text-lg font-bold">Add Project Member</h2>
         </DialogHeader>
-        <DialogContent className="space-y-4">
+        <DialogContent>
+          <div className="space-y-4">
           <p className="text-sm text-surface-500">Provide the Organization Membership ID to add to this project.</p>
           {memberError && <p className="text-sm text-danger">{memberError}</p>}
           <FormField label="Membership ID (UUID)" htmlFor="member_id">
             <Input id="member_id" value={newMemberId} onChange={(e) => setNewMemberId(e.target.value)} placeholder="00000000-0000-0000-0000-000000000000" />
           </FormField>
+          </div>
         </DialogContent>
         <DialogFooter>
           <Button variant="outline" onClick={() => setShowAddMember(false)}>Cancel</Button>

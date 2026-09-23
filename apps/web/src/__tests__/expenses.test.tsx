@@ -28,6 +28,8 @@ jest.mock('../features/expenses/api/expenses.api');
 jest.mock('../features/projects/api/projects.api');
 jest.mock('../features/categories/api/categories.api');
 jest.mock('../features/vendors/api/vendors.api');
+jest.mock('../features/documents/api/documents.api');
+import { documentsApi } from '../features/documents/api/documents.api';
 
 // Mock permissions
 jest.mock('../lib/auth-context', () => ({
@@ -198,7 +200,22 @@ describe('Expenses Web Module', () => {
   });
 
   describe('Detail Page', () => {
-    it('displays server-authoritative financial values and handles attachments', async () => {
+    beforeEach(() => {
+      global.fetch = jest.fn().mockResolvedValue({ ok: true });
+      (documentsApi.createDocument as jest.Mock).mockResolvedValue({
+        document: { id: 'new-doc-123', filename: 'test.pdf', mime_type: 'application/pdf', size_bytes: 1024 },
+        uploadData: { uploadUrl: 'http://s3', fields: {} }
+      });
+      (documentsApi.updateDocumentStatus as jest.Mock).mockResolvedValue({ id: 'new-doc-123', status: 'AVAILABLE' });
+      (documentsApi.getDownloadUrl as jest.Mock).mockResolvedValue({ downloadUrl: 'http://s3/download' });
+      
+      // Override default window.location for download test
+      delete (window as any).location;
+      window.location = { href: '' } as any;
+    });
+
+    it('displays server-authoritative financial values and handles normal attachment flow', async () => {
+      const user = userEvent.setup();
       (expensesApi.getExpense as jest.Mock).mockResolvedValue(mockExpense);
       (expensesApi.getAttachments as jest.Mock).mockResolvedValue([{ id: 'att-1', document_id: 'doc-1' }]);
       (expensesApi.attachDocument as jest.Mock).mockResolvedValue({});
@@ -209,6 +226,136 @@ describe('Expenses Web Module', () => {
         expect(screen.getByText('Cement Bags')).toBeInTheDocument();
         expect(screen.getByText('$88,502.95')).toBeInTheDocument();
         expect(screen.getByText('doc-1')).toBeInTheDocument();
+      });
+      
+      // Attach Document flow
+      const attachBtn = screen.getByRole('button', { name: /Attach Document/i });
+      fireEvent.click(attachBtn);
+      
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      await user.upload(fileInput, new File(['test'], 'test.pdf', { type: 'application/pdf' }));
+      
+      fireEvent.click(screen.getByText('Upload File'));
+      
+      await waitFor(() => {
+        expect(expensesApi.attachDocument).toHaveBeenCalledWith('exp-123', 'new-doc-123');
+        // Dialog should be closed, and list refreshed
+        expect(expensesApi.getAttachments).toHaveBeenCalledTimes(2);
+      });
+    });
+
+    it('handles verification failure without calling attachDocument', async () => {
+      const user = userEvent.setup();
+      (expensesApi.getExpense as jest.Mock).mockResolvedValue(mockExpense);
+      (expensesApi.getAttachments as jest.Mock).mockResolvedValue([]);
+      
+      // Verification fails
+      (documentsApi.updateDocumentStatus as jest.Mock).mockRejectedValueOnce(new Error('Verification failed'));
+
+      render(<ExpenseDetailPage />);
+      await waitFor(() => expect(screen.getByText('Cement Bags')).toBeInTheDocument());
+      
+      fireEvent.click(screen.getByRole('button', { name: /Attach Document/i }));
+      
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      await user.upload(fileInput, new File(['test'], 'test.pdf', { type: 'application/pdf' }));
+      fireEvent.click(screen.getByText('Upload File'));
+      
+      await waitFor(() => {
+        expect(screen.getByText(/Verification failed/i)).toBeInTheDocument();
+      });
+      
+      expect(expensesApi.attachDocument).not.toHaveBeenCalled();
+    });
+
+    it('handles association failure gracefully', async () => {
+      const user = userEvent.setup();
+      (expensesApi.getExpense as jest.Mock).mockResolvedValue(mockExpense);
+      (expensesApi.getAttachments as jest.Mock).mockResolvedValue([]);
+      (expensesApi.attachDocument as jest.Mock).mockRejectedValueOnce(new Error('Association failed'));
+
+      render(<ExpenseDetailPage />);
+      await waitFor(() => expect(screen.getByText('Cement Bags')).toBeInTheDocument());
+      
+      fireEvent.click(screen.getByRole('button', { name: /Attach Document/i }));
+      
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      await user.upload(fileInput, new File(['test'], 'test.pdf', { type: 'application/pdf' }));
+      fireEvent.click(screen.getByText('Upload File'));
+      
+      await waitFor(() => {
+        expect(expensesApi.attachDocument).toHaveBeenCalledWith('exp-123', 'new-doc-123');
+        expect(screen.getByText('Attachment Failed')).toBeInTheDocument();
+        expect(screen.getByText('Association failed')).toBeInTheDocument();
+      });
+    });
+
+    it('handles permission gating correctly', async () => {
+      (expensesApi.getExpense as jest.Mock).mockResolvedValue(mockExpense);
+      (expensesApi.getAttachments as jest.Mock).mockResolvedValue([{ id: 'att-1', document_id: 'doc-1', document: { id: 'doc-1', filename: 'existing.pdf', size_bytes: 1024, mime_type: 'application/pdf' } }]);
+      
+      (usePermissions as jest.Mock).mockReturnValue({
+        hasPermission: (p: string) => p === 'expenses:read' // Only read permission
+      });
+
+      render(<ExpenseDetailPage />);
+      await waitFor(() => expect(screen.getByText('existing.pdf')).toBeInTheDocument());
+      
+      expect(screen.queryByRole('button', { name: /Attach Document/i })).not.toBeInTheDocument();
+      expect(document.querySelector('.lucide-download')).not.toBeInTheDocument();
+      expect(document.querySelector('.lucide-trash-2')).not.toBeInTheDocument();
+    });
+
+    it('handles download flow properly', async () => {
+      (expensesApi.getExpense as jest.Mock).mockResolvedValue(mockExpense);
+      (expensesApi.getAttachments as jest.Mock).mockResolvedValue([{ id: 'att-1', document_id: 'doc-1', document: { id: 'doc-1', filename: 'existing.pdf', size_bytes: 1024, mime_type: 'application/pdf' } }]);
+
+      render(<ExpenseDetailPage />);
+      await waitFor(() => expect(screen.getByText('existing.pdf')).toBeInTheDocument());
+      
+      const downloadBtns = screen.getAllByRole('button', { name: /Download Attachment/i });
+      expect(downloadBtns[0]).toBeInTheDocument();
+      
+      fireEvent.click(downloadBtns[0]);
+      
+      await waitFor(() => {
+        expect(documentsApi.getDownloadUrl).toHaveBeenCalledWith('doc-1');
+        expect(window.location.href).toBe('http://s3/download');
+      });
+    });
+
+    it('handles relationship-only deletion and delete failure', async () => {
+      (expensesApi.getExpense as jest.Mock).mockResolvedValue(mockExpense);
+      (expensesApi.getAttachments as jest.Mock).mockResolvedValue([{ id: 'att-1', document_id: 'doc-1', document: { id: 'doc-1', filename: 'existing.pdf', size_bytes: 1024, mime_type: 'application/pdf' } }]);
+      (expensesApi.removeAttachment as jest.Mock).mockResolvedValue({});
+
+      render(<ExpenseDetailPage />);
+      await waitFor(() => expect(screen.getByText('existing.pdf')).toBeInTheDocument());
+      
+      const deleteBtns = screen.getAllByRole('button', { name: /Delete Attachment/i });
+      fireEvent.click(deleteBtns[0]);
+      
+      await waitFor(() => {
+        expect(expensesApi.removeAttachment).toHaveBeenCalledWith('exp-123', 'att-1');
+        expect(screen.queryByText('existing.pdf')).not.toBeInTheDocument();
+        expect(documentsApi.deleteDocument).not.toHaveBeenCalled(); // Ensure underlying document is NOT deleted
+      });
+
+      // Test failure
+      (expensesApi.getAttachments as jest.Mock).mockResolvedValue([{ id: 'att-2', document_id: 'doc-2', document: { id: 'doc-2', filename: 'doc-2', size_bytes: 1024, mime_type: 'application/pdf' } }]);
+      (expensesApi.removeAttachment as jest.Mock).mockRejectedValueOnce(new Error('Delete failed'));
+      jest.spyOn(window, 'alert').mockImplementation(() => {});
+
+      render(<ExpenseDetailPage />);
+      await waitFor(() => expect(screen.getByText('doc-2')).toBeInTheDocument());
+      
+      const deleteBtns2 = screen.getAllByRole('button', { name: /Delete Attachment/i });
+      fireEvent.click(deleteBtns2[0]);
+      
+      await waitFor(() => {
+        expect(window.alert).toHaveBeenCalledWith('Delete failed');
+        // Remains in list
+        expect(screen.getByText('doc-2')).toBeInTheDocument();
       });
     });
   });

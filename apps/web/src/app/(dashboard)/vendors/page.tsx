@@ -80,7 +80,7 @@ export default function VendorsPage() {
             <div className="p-6">
               <EmptyState 
                 title="No vendors found" 
-                message={searchQuery ? 'Adjust your search terms.' : 'Add your first vendor to get started.'} 
+                description={searchQuery ? 'Adjust your search terms.' : 'Add your first vendor to get started.'} 
               />
             </div>
           ) : (
@@ -110,7 +110,7 @@ export default function VendorsPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <Badge variant={vendor.status === 'ACTIVE' ? 'success' : 'secondary'}>
+                        <Badge variant={vendor.status === 'ACTIVE' ? 'success' : 'default'}>
                           {vendor.status}
                         </Badge>
                       </td>

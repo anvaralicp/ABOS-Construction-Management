@@ -183,7 +183,7 @@ export default function VendorDetailPage({ params }: { params: { id: string } })
         <div>
           <h1 className="text-2xl font-bold text-surface-900">{vendor.name}</h1>
           <div className="flex items-center gap-2 mt-1">
-            <Badge variant={vendor.status === 'ACTIVE' ? 'success' : 'secondary'}>{vendor.status}</Badge>
+            <Badge variant={vendor.status === 'ACTIVE' ? 'success' : 'default'}>{vendor.status}</Badge>
             {vendor.code && <span className="text-sm text-surface-500 font-mono">{vendor.code}</span>}
           </div>
         </div>
@@ -245,7 +245,7 @@ export default function VendorDetailPage({ params }: { params: { id: string } })
                       <div>
                         <div className="flex items-center gap-2">
                           <h3 className="font-semibold text-surface-900">{c.name}</h3>
-                          {c.is_primary && <Badge variant="primary" className="text-[10px] px-1.5 py-0">Primary</Badge>}
+                          {c.is_primary && <Badge variant="default" className="text-[10px] px-1.5 py-0">Primary</Badge>}
                         </div>
                         {c.designation && <p className="text-sm text-surface-500">{c.designation}</p>}
                         
@@ -293,7 +293,8 @@ export default function VendorDetailPage({ params }: { params: { id: string } })
           <h2 className="text-lg font-bold">{editingContact ? 'Edit Contact' : 'Add Contact'}</h2>
         </DialogHeader>
         <form onSubmit={handleSaveContact}>
-          <DialogContent className="space-y-4">
+          <DialogContent>
+            <div className="space-y-4">
             {contactError && <div className="p-3 bg-danger-50 text-danger-700 text-sm rounded-md">{contactError}</div>}
             
             <FormField label="Name" htmlFor="contactName">
@@ -322,6 +323,7 @@ export default function VendorDetailPage({ params }: { params: { id: string } })
               <label htmlFor="is_primary" className="text-sm font-medium text-surface-700">Set as Primary Contact</label>
             </div>
             
+            </div>
           </DialogContent>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setShowContactDialog(false)}>Cancel</Button>
