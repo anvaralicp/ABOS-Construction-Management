@@ -1,0 +1,1 @@
+ALTER TABLE "workforce_members" ADD COLUMN "version" INTEGER NOT NULL DEFAULT 1;

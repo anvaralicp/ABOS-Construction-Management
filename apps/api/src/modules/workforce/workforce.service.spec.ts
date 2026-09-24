@@ -19,6 +19,7 @@ describe('WorkforceService', () => {
         findMany: jest.fn(),
         count: jest.fn(),
         update: jest.fn(),
+        updateMany: jest.fn(),
       },
       projectWorkforceAssignment: {
         create: jest.fn(),
@@ -68,6 +69,51 @@ describe('WorkforceService', () => {
       expect(prisma.workforceMember.create).toHaveBeenCalled();
       expect(result.id).toEqual('wk-1');
       expect(audit.logEvent).toHaveBeenCalled();
+    });
+
+    it('should successfully update and increment version', async () => {
+      prisma.workforceMember.findUnique.mockResolvedValue({ id: 'wk-1', version: 1, status: 'ACTIVE' });
+      prisma.workforceMember.updateMany.mockResolvedValue({ count: 1 });
+
+      await service.update(mockContext, 'wk-1', { name: 'John Doe', version: 1 });
+      
+      expect(prisma.workforceMember.updateMany).toHaveBeenCalledWith({
+        where: { id: 'wk-1', organization_id: 'org-1', version: 1, deleted_at: null },
+        data: expect.objectContaining({ version: { increment: 1 } })
+      });
+      expect(audit.logEvent).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ action: 'WORKFORCE_UPDATED' }));
+    });
+
+    it('should reject update if version is stale', async () => {
+      prisma.workforceMember.findUnique.mockResolvedValue({ id: 'wk-1', version: 2 });
+      await expect(service.update(mockContext, 'wk-1', { version: 1 })).rejects.toThrow(ConflictException);
+    });
+
+    it('should reject update if updateMany returns count 0 (concurrent race)', async () => {
+      prisma.workforceMember.findUnique.mockResolvedValue({ id: 'wk-1', version: 1 });
+      prisma.workforceMember.updateMany.mockResolvedValue({ count: 0 });
+
+      await expect(service.update(mockContext, 'wk-1', { version: 1 })).rejects.toThrow(ConflictException);
+    });
+
+    it('should safely delete if not already deleted', async () => {
+      prisma.workforceMember.findUnique.mockResolvedValue({ id: 'wk-1', name: 'John Doe' });
+      prisma.workforceMember.updateMany.mockResolvedValue({ count: 1 });
+
+      await service.delete(mockContext, 'wk-1');
+
+      expect(prisma.workforceMember.updateMany).toHaveBeenCalledWith({
+        where: { id: 'wk-1', organization_id: 'org-1', deleted_at: null },
+        data: expect.objectContaining({ deleted_at: expect.any(Date) })
+      });
+      expect(audit.logEvent).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ action: 'WORKFORCE_DELETED' }));
+    });
+
+    it('should reject delete if updateMany returns count 0', async () => {
+      prisma.workforceMember.findUnique.mockResolvedValue({ id: 'wk-1', name: 'John Doe' });
+      prisma.workforceMember.updateMany.mockResolvedValue({ count: 0 });
+
+      await expect(service.delete(mockContext, 'wk-1')).rejects.toThrow(ConflictException);
     });
   });
 

@@ -82,17 +82,33 @@ export class WorkforceService {
   async update(context: TenantContext, id: string, dto: UpdateWorkforceDto) {
     const existing = await this.findOne(context, id);
 
-    const updated = await this.prisma.workforceMember.update({
-      where: { id_organization_id: { id, organization_id: context.organizationId } },
+    if (existing.version !== dto.version) {
+      throw new ConflictException(`Version mismatch. Expected ${existing.version}, but got ${dto.version}.`);
+    }
+
+    const result = await this.prisma.workforceMember.updateMany({
+      where: { 
+        id, 
+        organization_id: context.organizationId,
+        version: dto.version,
+        deleted_at: null
+      },
       data: {
         name: dto.name !== undefined ? dto.name : existing.name,
         trade: dto.trade !== undefined ? dto.trade : existing.trade,
         hourly_rate: dto.hourly_rate !== undefined ? dto.hourly_rate : existing.hourly_rate,
         currency: dto.currency !== undefined ? dto.currency : existing.currency,
         status: dto.status !== undefined ? dto.status : existing.status,
+        version: { increment: 1 },
         updated_by: context.userId,
       }
     });
+
+    if (result.count === 0) {
+      throw new ConflictException('The record was modified or deleted by another user. Please refresh and try again.');
+    }
+
+    const updated = await this.findOne(context, id);
 
     const action = dto.status !== undefined && dto.status !== existing.status 
       ? (dto.status === 'ACTIVE' ? 'WORKFORCE_ACTIVATED' : 'WORKFORCE_DEACTIVATED') 
@@ -111,10 +127,18 @@ export class WorkforceService {
   async delete(context: TenantContext, id: string) {
     const member = await this.findOne(context, id);
 
-    await this.prisma.workforceMember.update({
-      where: { id_organization_id: { id, organization_id: context.organizationId } },
+    const result = await this.prisma.workforceMember.updateMany({
+      where: { 
+        id, 
+        organization_id: context.organizationId,
+        deleted_at: null
+      },
       data: { deleted_at: new Date(), updated_by: context.userId }
     });
+
+    if (result.count === 0) {
+      throw new ConflictException('The record was modified or deleted by another user. Please refresh and try again.');
+    }
 
     await this.audit.logEvent(context, {
       action: 'WORKFORCE_DELETED',
@@ -330,7 +354,7 @@ export class WorkforceService {
     }
 
     if (existing.version !== dto.version) {
-      throw new ConflictException(\`Version mismatch. Expected \${existing.version}, but got \${dto.version}.\`);
+      throw new ConflictException(`Version mismatch. Expected ${existing.version}, but got ${dto.version}.`);
     }
 
     const result = await this.prisma.dailyAttendance.updateMany({
@@ -352,6 +376,10 @@ export class WorkforceService {
     const updated = await this.prisma.dailyAttendance.findUnique({
       where: { id: attendanceId }
     });
+
+    if (!updated) {
+      throw new NotFoundException('Attendance record not found after update.');
+    }
 
     await this.audit.logEvent(context, {
       action: 'ATTENDANCE_UPDATED',

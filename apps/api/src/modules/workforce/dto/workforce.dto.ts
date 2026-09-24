@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsEnum, IsNumber, IsInt, IsUUID, Min, MaxLength, IsDateString, IsNumberString, IsDecimal } from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsNumber, IsInt, IsUUID, Min, MaxLength, IsDateString, IsNumberString, IsDecimal, IsNotEmpty } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { WorkforceStatus, AssignmentStatus, AttendanceStatus } from '@prisma/client';
 
@@ -62,6 +62,11 @@ export class UpdateWorkforceDto {
   @IsOptional()
   @IsEnum(WorkforceStatus)
   status?: WorkforceStatus;
+
+  @ApiProperty()
+  @IsInt()
+  @IsNotEmpty()
+  version: number;
 }
 
 // --- Project Assignment ---
