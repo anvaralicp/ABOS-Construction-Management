@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/lib/permissions';
 import { 
-  LayoutDashboard, FolderKanban, Receipt, PieChart, Users, HardHat, FileText, Settings, Shield, X, Wallet
+  LayoutDashboard, FolderKanban, Receipt, PieChart, Users, HardHat, FileText, Settings, Shield, X, Wallet, Package
 } from 'lucide-react';
 
 const NAVIGATION = [
@@ -15,6 +15,7 @@ const NAVIGATION = [
   { name: 'Reports', href: '/reports', icon: PieChart, permission: 'reports:read' },
   { name: 'Workforce', href: '/workforce', icon: Users, permission: 'workforce:read' },
   { name: 'Equipment', href: '/equipment', icon: HardHat, permission: 'equipment:read' },
+  { name: 'Materials', href: '/materials', icon: Package, permission: 'materials:read' },
   { name: 'Documents', href: '/documents', icon: FileText, permission: 'documents:read' },
   { name: 'Settings', href: '/settings', icon: Settings, permission: 'organization:read' },
 ];
