@@ -429,7 +429,6 @@ model Project {
   updated_by String?   @db.Uuid
 
   organization Organization @relation(fields: [organization_id], references: [id], onDelete: Restrict)
-  expenses Expense[]
 
   members               ProjectMember[]
   notifications         Notification[]
@@ -440,6 +439,7 @@ model Project {
   workforce_assignments ProjectWorkforceAssignment[]
   vendor_payments       VendorPayment[]
   project_documents     ProjectDocument[]
+  ProjectEquipmentAssignment ProjectEquipmentAssignment[]
 
   @@unique([id, organization_id])
   @@index([organization_id, status])
@@ -477,7 +477,6 @@ model Category {
   updated_by String?   @db.Uuid
 
   organization Organization @relation(fields: [organization_id], references: [id], onDelete: Restrict)
-  expenses Expense[]
   parent       Category?    @relation("CategoryToCategory", fields: [parent_id], references: [id], onDelete: Restrict) // Left for RLS
   children     Category[]   @relation("CategoryToCategory")
 
@@ -568,7 +567,6 @@ model Vendor {
   updated_by String?   @db.Uuid
 
   organization Organization @relation(fields: [organization_id], references: [id], onDelete: Restrict)
-  expenses Expense[]
 
   contacts         VendorContact[]
   expenses         Expense[]
@@ -733,6 +731,7 @@ model WorkforceMember {
   hourly_rate     Int?
   currency        String?
   status          WorkforceStatus @default(ACTIVE)
+  version         Int @default(1)
   
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt

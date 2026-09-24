@@ -64,7 +64,7 @@ export class VendorPaymentsService {
         const outstanding = expense.total_amount - paidSoFar;
 
         if (dto.amount > outstanding) {
-          throw new BadRequestException(\`Payment amount (\${dto.amount}) exceeds outstanding expense balance (\${outstanding}).\`);
+          throw new BadRequestException(`Payment amount (${dto.amount}) exceeds outstanding expense balance (${outstanding}).`);
         }
       }
 
@@ -168,7 +168,7 @@ export class VendorPaymentsService {
       }
 
       if (existing.version !== dto.version) {
-        throw new ConflictException(\`Version mismatch. Expected \${existing.version}, but got \${dto.version}.\`);
+        throw new ConflictException(`Version mismatch. Expected ${existing.version}, but got ${dto.version}.`);
       }
 
       // If amount or status changes and it's tied to an expense, re-evaluate outstanding balance
@@ -198,7 +198,7 @@ export class VendorPaymentsService {
         const proposedTotalPaid = otherPaid + (isNewStatusCounted ? newAmount : 0);
 
         if (proposedTotalPaid > expense.total_amount) {
-          throw new BadRequestException(\`Proposed update exceeds outstanding expense balance (\${expense.total_amount - otherPaid}).\`);
+          throw new BadRequestException(`Proposed update exceeds outstanding expense balance (${expense.total_amount - otherPaid}).`);
         }
       }
 

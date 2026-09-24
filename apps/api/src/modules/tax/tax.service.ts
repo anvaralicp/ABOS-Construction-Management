@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../../infrastructure/database/prisma/prisma.service';
 import { AuditService } from '../../../infrastructure/audit/audit.service';
 import { TenantContext } from '../../common/interfaces/tenant-context.interface';
@@ -103,7 +103,6 @@ export class TaxService {
         (dto.effective_to !== undefined && new Date(dto.effective_to).getTime() !== config.effective_to?.getTime());
       
       if (financialChanged) {
-        import { ConflictException } from '@nestjs/common';
         throw new ConflictException('Cannot modify financial fields of a tax configuration already referenced by historical expenses. Create a new configuration instead.');
       }
     }
